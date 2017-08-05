@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{54451643-BCE6-433B-9AAE-E32C17B6DB7C}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Graphic.Engine</RootNamespace>
-    <AssemblyName>Graphic.Engine.Vulkan</AssemblyName>
+    <RootNamespace>Graphics.Engine</RootNamespace>
+    <AssemblyName>Graphics.Engine.Vulkan</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -21,6 +21,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
