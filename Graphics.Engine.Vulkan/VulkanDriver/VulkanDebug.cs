@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Graphic.Engine.VulkanDriver
+namespace Graphics.Engine.VulkanDriver
 {
     internal static class VulkanDebug
     {

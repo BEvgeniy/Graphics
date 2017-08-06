@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vulkan;
 
-namespace Graphic.Engine.VulkanDriver
+namespace Graphics.Engine.VulkanDriver
 {
     internal class VulkanDevice
     {
@@ -206,9 +205,9 @@ namespace Graphic.Engine.VulkanDriver
 		* @return A handle to the created command buffer
 		*/
         public Vulkan.CommandPool CreateCommandPool(UInt32 queueFamilyIndex,
-            Vulkan.CommandPoolCreateFlags createFlags = CommandPoolCreateFlags.ResetCommandBuffer)
+            Vulkan.CommandPoolCreateFlags createFlags = Vulkan.CommandPoolCreateFlags.ResetCommandBuffer)
         {
-            var cmdPoolInfo = new CommandPoolCreateInfo
+            var cmdPoolInfo = new Vulkan.CommandPoolCreateInfo
             {
                 QueueFamilyIndex = queueFamilyIndex,
                 Flags = createFlags
@@ -224,7 +223,7 @@ namespace Graphic.Engine.VulkanDriver
             // Due to differing queue family configurations of Vulkan implementations this can be a bit tricky, especially if the application
             // requests different queue types
 
-            var queueCreateInfos = new List<DeviceQueueCreateInfo>();
+            var queueCreateInfos = new List<Vulkan.DeviceQueueCreateInfo>();
 
             // Get queue family indices for the requested queue family types
             // Note that the indices may overlap depending on the implementation
@@ -235,7 +234,7 @@ namespace Graphic.Engine.VulkanDriver
             if ((requestedQueueTypes & Vulkan.QueueFlags.Graphics) == Vulkan.QueueFlags.Graphics)
             {
                 _queueFamilyIndices.Graphics = GetQueueFamilyIndex(Vulkan.QueueFlags.Graphics);
-                var queueInfo = new DeviceQueueCreateInfo
+                var queueInfo = new Vulkan.DeviceQueueCreateInfo
                 {
                     QueueFamilyIndex = _queueFamilyIndices.Graphics,
                     QueueCount = 1,
@@ -256,7 +255,7 @@ namespace Graphic.Engine.VulkanDriver
                 {
                     // Если индекс вычисляемого семейства очередей отличается от графического семейства,
                     // то нам нужна дополнительная очередь для вычислений
-                    var queueInfo = new DeviceQueueCreateInfo
+                    var queueInfo = new Vulkan.DeviceQueueCreateInfo
                     {
                         QueueFamilyIndex = _queueFamilyIndices.Compute,
                         QueueCount = 1,
@@ -281,7 +280,7 @@ namespace Graphic.Engine.VulkanDriver
                     // If compute family index differs, we need an additional queue create info for the compute queue
                     // Если индекс семейства очередей для передачи отличается от графического и вычисляемого семейства,
                     // то нам нужна дополнительная очередь для передачи
-                    var queueInfo = new DeviceQueueCreateInfo
+                    var queueInfo = new Vulkan.DeviceQueueCreateInfo
                     {
                         QueueFamilyIndex = _queueFamilyIndices.Transfer,
                         QueueCount = 1,
@@ -304,7 +303,7 @@ namespace Graphic.Engine.VulkanDriver
                 deviceExtensions.Add("VK_KHR_swapchain");
             }
 
-            var deviceCreateInfo = new DeviceCreateInfo
+            var deviceCreateInfo = new Vulkan.DeviceCreateInfo
             {
                 QueueCreateInfoCount = (UInt32) queueCreateInfos.Count,
                 QueueCreateInfos = queueCreateInfos.ToArray(),

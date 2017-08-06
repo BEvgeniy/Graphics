@@ -7,7 +7,6 @@ namespace Graphic.Tests
         static void Main(String[] args)
         {
             // Test
-            // Test New Branch
         }
     }
 }

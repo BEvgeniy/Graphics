@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Graphic.Engine.VulkanDriver;
 
-namespace Graphic.Engine.VulkanDriver
+namespace Graphics.Engine.VulkanDriver
 {
     internal static class VulkanManager
     {
@@ -57,6 +58,10 @@ namespace Graphic.Engine.VulkanDriver
         static VulkanManager()
         {
             Locker = new Object();
+        }
+
+        private static void InitDefaults()
+        {
             _isVulkanInit = false;
             _isDebugAndValidation = true;
             _vulkanApiVersion = Vulkan.Version.Make(1, 0, 0);
@@ -71,8 +76,9 @@ namespace Graphic.Engine.VulkanDriver
             };
             if (!_isDebugAndValidation) return;
             _vulkanEnabledInstanceExtentionNames.Add("VK_EXT_debug_report");
-            _vulkanEnabledInstanceLayerNames = new List<String> {"VK_LAYER_LUNARG_standard_validation"};
+            _vulkanEnabledInstanceLayerNames = new List<String> { "VK_LAYER_LUNARG_standard_validation" };
             _vulkanPhysicalDevices = new List<Vulkan.PhysicalDevice>();
+
         }
 
         public static void Init()
@@ -81,13 +87,16 @@ namespace Graphic.Engine.VulkanDriver
             lock (Locker)
             {
                 if (_isVulkanInit) return;
+
+                InitDefaults();
+                
                 // Создадим экземпляр Vulkan
                 CreateInstance();
                 // Если требуется для отладки, включаем уровни проверки по умолчанию
                 if (_isDebugAndValidation)
                 {
                     // Указанные флаги отчетности определяют, какие сообщения для слоев следует отображать 
-                    // Для проверки (отладки) приложения, битового флага ошибка и битового флага предупреждение, должно быть достаточно
+                    // Для проверки (отладки) приложения, битового флага Error и битового флага Warning, должно быть достаточно
                     const Vulkan.DebugReportFlagsExt debugReportFlags =
                         Vulkan.DebugReportFlagsExt.Error | Vulkan.DebugReportFlagsExt.Warning;
                     // Дополнительные битового флаги включают информацию о производительности, загрузчик и другие отладочные сообщения
@@ -129,16 +138,17 @@ namespace Graphic.Engine.VulkanDriver
             var physicalDevices = _vulkanInstance.EnumeratePhysicalDevices();
             if (physicalDevices.Length <= 0)
             {
-                throw new Exception("В системе не установлено подходящее устройство для вывода изображения на экран");
+                throw new Exception("В системе не установлен подходящий видеоадаптер для вывода изображения на экран");
             }
             _vulkanPhysicalDevices.AddRange(physicalDevices);
+            Console.WriteLine("Информация по видеоадаптерам в системе");
             for (var i = 0; i < _vulkanPhysicalDevices.Count; i++)
             {
                 var physicalDevice = _vulkanPhysicalDevices[i];
                 var deviceProperties = physicalDevice.GetProperties();
                 Console.WriteLine("Название видеоадаптера [" + i + "] : " + deviceProperties.DeviceName);
                 Console.WriteLine("Тип видеоадаптера: " + VulkanTools.PhysicalDeviceTypeString(deviceProperties.DeviceType));
-                Console.WriteLine("Версия графического API Vulkan: " + (deviceProperties.ApiVersion >> 22) + "." +
+                Console.WriteLine("Версия графического API Vulkan поддерживаемая видеоадаптером: " + (deviceProperties.ApiVersion >> 22) + "." +
                                   ((deviceProperties.ApiVersion >> 12) & 0x3ff) + "." +
                                   (deviceProperties.ApiVersion & 0xfff));
             }
