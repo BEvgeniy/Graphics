@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Graphic.Engine.VulkanDriver;
+using Graphics.Engine.Settings;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver
 {
@@ -8,39 +11,22 @@ namespace Graphics.Engine.VulkanDriver
     {
         #region .fields
 
-        // Разрешена отладка true, иначе false
-        private static Boolean _isDebugAndValidation;
-
-        // Версия API Vulkan
-        private static UInt32 _vulkanApiVersion;
-
-        // Имя приложения 
-        private static String _applicationName;
-
-        // Версия приложения
-        private static UInt32 _applicationVersion;
-
-        // Имя движка 
-        private static String _engineName;
-
-        // Версия движка
-        private static UInt32 _engineVersion;
-
         // Флаг - определяет был ли создан экземпляр Vulkan
         private static Boolean _isVulkanInit;
+        
+        // Предустановленные расширения в системе, которые доступны для задания при создании экземпляра Vulkan 
+        private static IReadOnlyList<Vulkan.ExtensionProperties> _vulkanAvailableInstanceExtensions;
 
-        // Экземпляр Vulkan - хранит все состояния для текущего приложения
-        // Может быть создан только 1 раз
-        private static Vulkan.Instance _vulkanInstance;
+        // Предустановленные слои в системе, экземпляра которые доступны для задания при создании экземпляра Vulkan 
+        // TODO: (надо разобраться какие слои для чего нужны - очень слабое понимание на сегодняшний день)
+        private static IReadOnlyList<Vulkan.LayerProperties> _vulkanAvailableInstanceLayers;
 
-        // Расширения экземпляра
-        private static List<String> _vulkanEnabledInstanceExtentionNames;
+        // Расширения, которые подключены к созданному экземпляру Vulkan
+        private static IReadOnlyList<String> _vulkanEnabledInstanceExtentionNames;
 
-        // Слои экземпляра TODO: (надо разобраться для чего нужны слои - очень слабое понимание на сегодняшний день)
-        private static List<String> _vulkanEnabledInstanceLayerNames;
-
-        // Список видеокарт доступных в системе (интегрированная или внешняя или тандем (sli))
-        private static List<Vulkan.PhysicalDevice> _vulkanPhysicalDevices;
+        // Слои, которые подключены к созданному экземпляру Vulkan
+        // TODO: (надо разобраться для чего нужны слои - очень слабое понимание на сегодняшний день)
+        private static IReadOnlyList<String> _vulkanEnabledInstanceLayerNames;
 
         // Обертка над Vulkan.Device и Vulkan.PhysicalDevice (выбранный видеоадаптер)
         // Vulkan.Device - это логическое устройство, 
@@ -50,59 +36,66 @@ namespace Graphics.Engine.VulkanDriver
         // Так вот мы можем создать два логических устройства, одно из которых будет поддерживать одно из фич, а второе оставшуюся фичу
         private static VulkanDevice _vulkanDevice;
 
-        // Объект для блокировки критических участков кода
-        private static readonly Object Locker;
+        // Объект для синхронизации выполнения критических участков кода. 
+        // В данном случае позволяется помеченный участок кода выполнять только одним потоком.
+        // Если один поток выполняет помеченый участок кода, то другие в это время ожидают.
+        private static readonly Object SyncObject = new Object();
+
+        #endregion
+
+        #region .props
+
+        /// <summary>
+        /// Экземпляр(объект или инстанс) Vulkan - хранит все состояния для текущего приложения
+        /// Создается один раз при инициализации. 
+        /// </summary>
+        public static Vulkan.Instance VulkanInstance { get; private set; }
+
+        /// <summary>
+        /// Список видеоадаптеров доступных в системе (интегрированная или внешняя или тандем (sli))
+        /// </summary>
+        public static IReadOnlyList<Vulkan.PhysicalDevice> VulkanPhysicalDevices { get; private set; }
+
+        /// <summary>
+        /// Выбранный видеоадаптер. 
+        /// Видеоадаптер который был выбран системой автоматически (рекомендуется), либо указанный в настройках.
+        /// Видеоадаптер может быть задан явно, через указание в настройках, в случае, когда в системе имеется несколько видеоадаптеров и ведется разработка, 
+        /// либо по какой-то причине выбранный системой видаоадаптер не устраивает или не отрабатывает как от него ожидают.
+        /// </summary>
+        public static Vulkan.PhysicalDevice VulkanPhysicalDevice { get; private set; }
+        /// <summary>
+        /// Логическое устройство для выбранного видеоадаптера. 
+        /// </summary>
+        public static Vulkan.Device VulkanLogicalDevice { get; private set; }
 
         #endregion
 
         static VulkanManager()
         {
-            Locker = new Object();
-        }
-
-        private static void InitDefaults()
-        {
             _isVulkanInit = false;
-            _isDebugAndValidation = true;
-            _vulkanApiVersion = Vulkan.Version.Make(1, 0, 0);
-            _applicationName = "Atlas";
-            _applicationVersion = Vulkan.Version.Make(1, 0, 0);
-            _engineName = "Atlas Engine";
-            _engineVersion = Vulkan.Version.Make(1, 0, 0);
-            _vulkanEnabledInstanceExtentionNames = new List<String>
-            {
-                "VK_KHR_surface",
-                "VK_KHR_win32_surface"
-            };
-            if (!_isDebugAndValidation) return;
-            _vulkanEnabledInstanceExtentionNames.Add("VK_EXT_debug_report");
-            _vulkanEnabledInstanceLayerNames = new List<String> { "VK_LAYER_LUNARG_standard_validation" };
-            _vulkanPhysicalDevices = new List<Vulkan.PhysicalDevice>();
-
         }
 
         public static void Init()
         {
             if (_isVulkanInit) return;
-            lock (Locker)
+
+            lock (SyncObject)
             {
                 if (_isVulkanInit) return;
 
-                InitDefaults();
-                
                 // Создадим экземпляр Vulkan
                 CreateInstance();
                 // Если требуется для отладки, включаем уровни проверки по умолчанию
-                if (_isDebugAndValidation)
+                if (SettingsManager.IsDebugEnabled)
                 {
                     // Указанные флаги отчетности определяют, какие сообщения для слоев следует отображать 
                     // Для проверки (отладки) приложения, битового флага Error и битового флага Warning, должно быть достаточно
                     const Vulkan.DebugReportFlagsExt debugReportFlags =
                         Vulkan.DebugReportFlagsExt.Error | Vulkan.DebugReportFlagsExt.Warning;
-                    // Дополнительные битового флаги включают информацию о производительности, загрузчик и другие отладочные сообщения
-                    VulkanDebug.SetupDebugging(_vulkanInstance, debugReportFlags);
+                    // Дополнительные битового флаги включают информацию о производительности, загрузчике и другие отладочные сообщения
+                    VulkanDebug.SetupDebugging(VulkanInstance, debugReportFlags);
                 }
-                // Получаем все видеоадаптеры доступные в системе
+                // Получаем все физические устройства (здесь и далее видеоадаптеры) доступные в системе
                 GetPhysicalDevices();
                 // Создадим логическое устройство связанное с видеоадаптером
                 CreateLogicalDevice();
@@ -111,40 +104,105 @@ namespace Graphics.Engine.VulkanDriver
 
         private static void CreateInstance()
         {
+            // Действие 1: Получим расширения и слои, которые доступны для использования при создании экземпляра Vulkan
+
+            var availInstExtensions = new List<Vulkan.ExtensionProperties>();
+            var availInstLayers = new List<Vulkan.LayerProperties>();
+
+            var availableInstanceExtensions = Vulkan.Commands.EnumerateInstanceExtensionProperties();
+
+            if (availableInstanceExtensions != null && availableInstanceExtensions.Length > 0)
+            {
+                availInstExtensions.AddRange(availableInstanceExtensions);
+                _vulkanAvailableInstanceExtensions = availInstExtensions;
+            }
+
+            var availableInstanceLayers = Vulkan.Commands.EnumerateInstanceLayerProperties();
+
+            if (availableInstanceLayers != null && availableInstanceLayers.Length > 0)
+            {
+                availInstLayers.AddRange(availableInstanceLayers);
+                _vulkanAvailableInstanceLayers = availInstLayers;
+            }
+
+            // Действие 2: Так как мы собираемся рендерить на экран, то надо подключить расширения WSI (Window System Integration)
+
+            var vulkanEnabledInstExtNames = new List<String>
+            {
+                "VK_KHR_surface",
+                "VK_KHR_win32_surface"
+            };
+            
+            // Действие 3: Если собираемся отлаживаться и проходить валидацию по слоям, надо подключить расширение отладки и слои валидации
+
+            if (SettingsManager.IsDebugEnabled)
+            {
+                vulkanEnabledInstExtNames.Add("VK_EXT_debug_report");
+                //_vulkanEnabledInstanceLayerNames = new List<String> { "VK_LAYER_LUNARG_standard_validation" };
+                var vulkanEnabledInstLayerNames = new List<String>();
+
+                foreach (var layer in _vulkanAvailableInstanceLayers)
+                {
+                    if (
+                        layer.LayerName == "VK_LAYER_LUNARG_vktrace"
+                        || layer.LayerName == "VK_LAYER_LUNARG_api_dump"
+                        // || layer.LayerName == "VK_LAYER_GOOGLE_threading" 
+                        // || layer.LayerName == "VK_LAYER_GOOGLE_unique_objects" 
+                        // ||layer.LayerName == "VK_LAYER_VALVE_steam_overlay"
+                        )
+                    {
+                        continue;
+                    }
+
+                    vulkanEnabledInstLayerNames.Add(layer.LayerName);
+                }
+
+                _vulkanEnabledInstanceLayerNames = vulkanEnabledInstLayerNames;
+            }
+
+            _vulkanEnabledInstanceExtentionNames = vulkanEnabledInstExtNames;
+
+            // Действие 4: Заполним необходимые параметры для создания экземпляра Vulkan
+
             var appInfo = new Vulkan.ApplicationInfo
             {
-                ApiVersion = _vulkanApiVersion,
-                ApplicationVersion = _applicationVersion,
-                ApplicationName = _applicationName,
-                EngineName = _engineName,
-                EngineVersion = _engineVersion
+                ApiVersion = SettingsManager.VulkanApiVersion,
+                ApplicationVersion = SettingsManager.ApplicationVersion,
+                ApplicationName = SettingsManager.ApplicationName,
+                EngineName = SettingsManager.EngineName,
+                EngineVersion = SettingsManager.EngineVersion
             };
+
             var createInfo = new Vulkan.InstanceCreateInfo
             {
                 ApplicationInfo = appInfo,
                 EnabledExtensionNames = _vulkanEnabledInstanceExtentionNames.ToArray(),
                 EnabledExtensionCount = (UInt32) _vulkanEnabledInstanceExtentionNames.Count,
             };
-            if (_isDebugAndValidation)
+
+            if (SettingsManager.IsDebugEnabled)
             {
                 createInfo.EnabledLayerCount = (UInt32) _vulkanEnabledInstanceLayerNames.Count;
                 createInfo.EnabledLayerNames = _vulkanEnabledInstanceLayerNames.ToArray();
             }
-            _vulkanInstance = new Vulkan.Instance(createInfo);
+
+            // Действие 5: Создадим экземпляр Vulkan
+
+            VulkanInstance = new Vulkan.Instance(createInfo);
         }
 
         private static void GetPhysicalDevices()
         {
-            var physicalDevices = _vulkanInstance.EnumeratePhysicalDevices();
+            var physicalDevices = VulkanInstance.EnumeratePhysicalDevices();
             if (physicalDevices.Length <= 0)
             {
                 throw new Exception("В системе не установлен подходящий видеоадаптер для вывода изображения на экран");
             }
-            _vulkanPhysicalDevices.AddRange(physicalDevices);
+            VulkanPhysicalDevices = new List<PhysicalDevice>(physicalDevices);
             Console.WriteLine("Информация по видеоадаптерам в системе");
-            for (var i = 0; i < _vulkanPhysicalDevices.Count; i++)
+            for (var i = 0; i < VulkanPhysicalDevices.Count; i++)
             {
-                var physicalDevice = _vulkanPhysicalDevices[i];
+                var physicalDevice = VulkanPhysicalDevices[i];
                 var deviceProperties = physicalDevice.GetProperties();
                 Console.WriteLine("Название видеоадаптера [" + i + "] : " + deviceProperties.DeviceName);
                 Console.WriteLine("Тип видеоадаптера: " + VulkanTools.PhysicalDeviceTypeString(deviceProperties.DeviceType));
@@ -161,7 +219,7 @@ namespace Graphics.Engine.VulkanDriver
             var useSwapChain = true;
             var requestedQueueTypes = Vulkan.QueueFlags.Graphics | Vulkan.QueueFlags.Compute;
             // TODO: Выбираю по умолчанию первый, но в реальности надо анализировать какой выбирать (приоритет 'внешний видеоадаптер')
-            _vulkanDevice = new VulkanDevice(_vulkanPhysicalDevices[0], requestedFeatures, 
+            _vulkanDevice = new VulkanDevice(VulkanPhysicalDevices[0], requestedFeatures, 
                 requestedExtensions, useSwapChain, requestedQueueTypes);
         }
 
