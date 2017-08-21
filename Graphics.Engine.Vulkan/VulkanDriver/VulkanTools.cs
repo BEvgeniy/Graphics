@@ -26,5 +26,12 @@ namespace Graphic.Engine.VulkanDriver
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
+
+        public static String GetVersionAsString(UInt32 apiVersion)
+        {
+            return (apiVersion >> 22) + "." +
+                   ((apiVersion >> 12) & 0x3ff) + "." +
+                   (apiVersion & 0xfff);
+        }
     }
 }

@@ -21,7 +21,8 @@ namespace Graphics.Engine
                 // Т.к. менеджер типа VulkanManager, также как и другие менеджеры используют загруженные настройки из файлов конфигураций
                 SettingsManager.LoadSettings();
                 // Теперь проинициализируем Vulkan
-                VulkanManager.Init();
+                var vulkanManager = new VulkanManager();
+                vulkanManager.Init();
             }
             catch (Vulkan1.ResultException e)
             {

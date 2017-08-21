@@ -328,6 +328,8 @@ namespace Graphics.Engine.VulkanDriver
             _commandPool = CreateCommandPool(_queueFamilyIndices.Graphics);
 
             _vulkanLogicalDeviceEnabledFeatures = requestedFeatures;
+
+            _vulkanLogicalDevice.Destroy();
         }
     }
 }

@@ -51,7 +51,10 @@
     <Compile Include="Settings\SettingsManager.cs" />
     <Compile Include="VulkanDriver\VulkanDebug.cs" />
     <Compile Include="VulkanDriver\VulkanDevice.cs" />
+    <Compile Include="VulkanDriver\VulkanInstance.cs" />
+    <Compile Include="VulkanDriver\VulkanLogicalDevice.cs" />
     <Compile Include="VulkanDriver\VulkanManager.cs" />
+    <Compile Include="VulkanDriver\VulkanPhysicalDevice.cs" />
     <Compile Include="VulkanDriver\VulkanTools.cs" />
   </ItemGroup>
   <ItemGroup>
