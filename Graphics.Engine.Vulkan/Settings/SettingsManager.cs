@@ -1,4 +1,5 @@
 ﻿using System;
+using Graphics.Engine.VulkanDriver;
 
 namespace Graphics.Engine.Settings
 {
@@ -23,11 +24,11 @@ namespace Graphics.Engine.Settings
                 {
                     // TODO: Загружаить настройки из файла(ов)
                     // а пока заполняю статичной информацией
-                    IsDebugEnabled = true;
+                    // IsDebugEnabled = true;
                     ApplicationName = "Atlas";
-                    ApplicationVersion = Vulkan.Version.Make(1, 0, 0);
+                    ApplicationVersion = VulkanTools.GetVersion(1, 0, 0);
                     EngineName = "Atlas Engine";
-                    EngineVersion = Vulkan.Version.Make(1, 0, 0);
+                    EngineVersion = VulkanTools.GetVersion(1, 0, 0);
                 }
                 catch (Exception ex)
                 {
@@ -43,7 +44,7 @@ namespace Graphics.Engine.Settings
         /// <summary>
         /// Версия API Vulkan (Поддерживаемая версия)
         /// </summary>
-        public static UInt32 VulkanApiVersion => Vulkan.Version.Make(1, 0, 0);
+        public static UInt32 VulkanApiVersion => VulkanTools.GetVersion(1, 0, 0);
 
         /// <summary>
         /// Свойство определяет разрешено ли включение отладки и слоев валидации Vulkan'а.
@@ -52,28 +53,28 @@ namespace Graphics.Engine.Settings
         public static Boolean IsDebugEnabled { get; private set; }
 
         /// <summary>
-        /// Имя приложения. Используется при создании экземпляра объекта (инстанса) Vulkan. 
+        /// Имя приложения. Используется при создании экземпляра объекта (инстанса)  
         /// Имя можно указывать любое. Носит для Vulkan только информационный характер.
         /// Полезно при отладке, кроме прочей информации Vulkan добавляет эту информацию в информацию отладочную.
         /// </summary>
         public static String ApplicationName { get; private set; }
 
         /// <summary>
-        /// Версия приложения. Используется при создании экземпляра объекта (инстанса) Vulkan. 
+        /// Версия приложения. Используется при создании экземпляра объекта (инстанса)  
         /// Версию можно указывать любую. Носит для Vulkan только информационный характер.
         /// Полезно при отладке, кроме прочей информации Vulkan добавляет эту информацию в информацию отладочную.
         /// </summary>
         public static UInt32 ApplicationVersion { get; private set; }
 
         /// <summary>
-        /// Имя движка. Используется при создании экземпляра объекта (инстанса) Vulkan. 
+        /// Имя движка. Используется при создании экземпляра объекта (инстанса)  
         /// Имя можно указывать любое. Носит для Vulkan только информационный характер.
         /// Полезно при отладке, кроме прочей информации Vulkan добавляет эту информацию в информацию отладочную.
         /// </summary>
         public static String EngineName { get; private set; }
 
         /// <summary>
-        /// Версия движка. Используется при создании экземпляра объекта (инстанса) Vulkan. 
+        /// Версия движка. Используется при создании экземпляра объекта (инстанса)  
         /// Версию можно указывать любую. Носит для Vulkan только информационный характер.
         /// Полезно при отладке, кроме прочей информации Vulkan добавляет эту информацию в информацию отладочную.
         /// </summary>

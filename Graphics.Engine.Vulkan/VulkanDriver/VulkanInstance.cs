@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Graphic.Engine.VulkanDriver;
 using Graphics.Engine.Settings;
+using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
 {
@@ -13,18 +13,18 @@ namespace Graphics.Engine.VulkanDriver
     {
         public VulkanInstance()
         {
-            VulkanAvailableInstanceExtensions = new List<Vulkan.ExtensionProperties>();
-            VulkanAvailableInstanceLayers = new List<Vulkan.LayerProperties>();
-            VulkanPhysicalDevices = new List<Vulkan.PhysicalDevice>();
-            VulkanEnabledInstanceExtentions = new List<Vulkan.ExtensionProperties>();
-            VulkanEnabledInstanceLayers = new List<Vulkan.LayerProperties>();
+            VulkanAvailableInstanceExtensions = new List<ExtensionProperties>();
+            VulkanAvailableInstanceLayers = new List<LayerProperties>();
+            VulkanPhysicalDevices = new List<PhysicalDevice>();
+            VulkanEnabledInstanceExtentions = new List<ExtensionProperties>();
+            VulkanEnabledInstanceLayers = new List<LayerProperties>();
 
             // Получим расширения и слои, которые доступны для использования при создании экземпляра Vulkan
 
-            var availInstExtensions = new List<Vulkan.ExtensionProperties>();
-            var availInstLayers = new List<Vulkan.LayerProperties>();
+            var availInstExtensions = new List<ExtensionProperties>();
+            var availInstLayers = new List<LayerProperties>();
 
-            var availableInstanceExtensions = Vulkan.Commands.EnumerateInstanceExtensionProperties();
+            var availableInstanceExtensions = Commands.EnumerateInstanceExtensionProperties(null);
 
             if (availableInstanceExtensions != null && availableInstanceExtensions.Length > 0)
             {
@@ -32,7 +32,7 @@ namespace Graphics.Engine.VulkanDriver
                 VulkanAvailableInstanceExtensions = availInstExtensions;
             }
 
-            var availableInstanceLayers = Vulkan.Commands.EnumerateInstanceLayerProperties();
+            var availableInstanceLayers = Commands.EnumerateInstanceLayerProperties();
 
             if (availableInstanceLayers != null && availableInstanceLayers.Length > 0)
             {
@@ -44,51 +44,51 @@ namespace Graphics.Engine.VulkanDriver
         /// <summary>
         /// Предустановленные расширения в системе, которые доступны для задания при создании экземпляра Vulkan 
         /// </summary>
-        public IReadOnlyList<Vulkan.ExtensionProperties> VulkanAvailableInstanceExtensions { get; }
+        public IReadOnlyList<ExtensionProperties> VulkanAvailableInstanceExtensions { get; }
 
         /// <summary>
         /// Предустановленные слои в системе, экземпляра которые доступны для задания при создании экземпляра Vulkan 
         /// </summary>
         /// TODO: (надо разобраться какие слои для чего нужны - очень слабое понимание на сегодняшний день)
-        public IReadOnlyList<Vulkan.LayerProperties> VulkanAvailableInstanceLayers { get; }
+        public IReadOnlyList<LayerProperties> VulkanAvailableInstanceLayers { get; }
 
         /// <summary>
         /// Экземпляр(объект или инстанс) Vulkan - хранит все состояния для текущего приложения
         /// Создается один раз при инициализации. 
         /// </summary>
-        public Vulkan.Instance Instance { get; private set; }
+        public Instance Instance { get; private set; }
 
         /// <summary>
         /// Названия расширений, которые подключены к созданному экземпляру Vulkan
         /// </summary>
-        public IReadOnlyList<Vulkan.ExtensionProperties> VulkanEnabledInstanceExtentions { get; private set; }
+        public IReadOnlyList<ExtensionProperties> VulkanEnabledInstanceExtentions { get; private set; }
 
         /// <summary>
         /// Названия слоев, которые подключены к созданному экземпляру Vulkan
         /// </summary>
-        public IReadOnlyList<Vulkan.LayerProperties> VulkanEnabledInstanceLayers { get; private set; }
+        public IReadOnlyList<LayerProperties> VulkanEnabledInstanceLayers { get; private set; }
 
         /// <summary>
         /// Список видеоадаптеров доступных в системе (интегрированная или внешняя или тандем (sli))
         /// </summary>
-        public IReadOnlyList<Vulkan.PhysicalDevice> VulkanPhysicalDevices { get; private set; }
+        public IReadOnlyList<PhysicalDevice> VulkanPhysicalDevices { get; private set; }
 
-        public Vulkan.ExtensionProperties GetExtensionPropertiesByName(String extentionName)
+        public ExtensionProperties GetExtensionPropertiesByName(String extentionName)
         {
-            return VulkanAvailableInstanceExtensions.FirstOrDefault(e=> e.ExtensionName == extentionName);
+            return VulkanAvailableInstanceExtensions.FirstOrDefault(e => e.ExtensionName == extentionName);
         }
 
-        public Vulkan.LayerProperties GetLayerPropertiesByName(String layerName)
+        public LayerProperties GetLayerPropertiesByName(String layerName)
         {
             return VulkanAvailableInstanceLayers.FirstOrDefault(e => e.LayerName == layerName);
         }
 
-        public void Create(List<Vulkan.ExtensionProperties> requestedExtentions, List<Vulkan.LayerProperties> requestedLayers)
-        {         
+        public void Create(List<ExtensionProperties> requestedExtentions, List<LayerProperties> requestedLayers)
+        {
             VulkanEnabledInstanceExtentions = requestedExtentions;
             VulkanEnabledInstanceLayers = requestedLayers;
             // Заполним необходимые параметры для создания экземпляра Vulkan
-            var appInfo = new Vulkan.ApplicationInfo
+            var appInfo = new ApplicationInfo
             {
                 ApiVersion = SettingsManager.VulkanApiVersion,
                 ApplicationVersion = SettingsManager.ApplicationVersion,
@@ -97,30 +97,30 @@ namespace Graphics.Engine.VulkanDriver
                 EngineVersion = SettingsManager.EngineVersion
             };
 
-            var createInfo = new Vulkan.InstanceCreateInfo
+            var createInfo = new InstanceCreateInfo
             {
                 ApplicationInfo = appInfo,
-                EnabledExtensionCount = (UInt32)VulkanEnabledInstanceExtentions.Count,
+                EnabledExtensionCount = (UInt32) VulkanEnabledInstanceExtentions.Count,
                 EnabledExtensionNames = VulkanEnabledInstanceExtentions.Select(e => e.ExtensionName).ToArray(),
             };
 
             if (SettingsManager.IsDebugEnabled)
             {
-                createInfo.EnabledLayerCount = (UInt32)VulkanEnabledInstanceLayers.Count;
+                createInfo.EnabledLayerCount = (UInt32) VulkanEnabledInstanceLayers.Count;
                 createInfo.EnabledLayerNames = VulkanEnabledInstanceLayers.Select(e => e.LayerName).ToArray();
             }
             // Создадим экземпляр Vulkan
-            Instance = new Vulkan.Instance(createInfo);
+            Instance = new Instance(createInfo);
             // Если требуется для отладки, включаем уровни проверки по умолчанию
             if (SettingsManager.IsDebugEnabled)
             {
                 // Указанные флаги отчетности определяют, какие сообщения для слоев следует отображать 
                 // Для проверки (отладки) приложения, битового флага Error и битового флага Warning, должно быть достаточно
-                const Vulkan.DebugReportFlagsExt debugReportFlags =
-                    Vulkan.DebugReportFlagsExt.Error
-                    | Vulkan.DebugReportFlagsExt.Warning
-                    | Vulkan.DebugReportFlagsExt.PerformanceWarning
-                    | Vulkan.DebugReportFlagsExt.Debug;
+                const DebugReportFlagsExt debugReportFlags =
+                    DebugReportFlagsExt.Error
+                    | DebugReportFlagsExt.Warning
+                    | DebugReportFlagsExt.PerformanceWarning
+                    | DebugReportFlagsExt.Debug;
                 // Дополнительные битового флаги включают информацию о производительности, загрузчике и другие отладочные сообщения
                 VulkanDebug.SetupDebugging(Instance, debugReportFlags);
             }
@@ -130,8 +130,8 @@ namespace Graphics.Engine.VulkanDriver
                 throw new Exception("В системе не установлен подходящий видеоадаптер поддерживающий работу с Vulkan");
             }
 
-            VulkanPhysicalDevices = new List<Vulkan.PhysicalDevice>(physicalDevices);
-        
+            VulkanPhysicalDevices = new List<PhysicalDevice>(physicalDevices);
+
             if (SettingsManager.IsDebugEnabled)
             {
                 Console.WriteLine("Информация по видеоадаптерам в системе");
@@ -151,10 +151,10 @@ namespace Graphics.Engine.VulkanDriver
         /// <summary>
         /// Поиск наилучшего видеоадаптера для работы с нашим приложением
         /// </summary>
-        public Vulkan.PhysicalDevice GetVulkanPhysicalDevice()
+        public PhysicalDevice GetVulkanPhysicalDevice()
         {
             var rates = GetVulkanPhysicalDeviceRate();
-            Vulkan.PhysicalDevice physicalDevice = null;
+            PhysicalDevice physicalDevice = null;
             var maxRate = 0U;
             foreach (var rate in rates)
             {
@@ -172,9 +172,9 @@ namespace Graphics.Engine.VulkanDriver
         /// Определяет рейтинг устройства на основе поддерживаемой функциональности
         /// Чем выше рейтинг устройства, тем оно предпочтительнее для нас
         /// </summary>
-        private IReadOnlyDictionary<Vulkan.PhysicalDevice, UInt32> GetVulkanPhysicalDeviceRate()
+        private IReadOnlyDictionary<PhysicalDevice, UInt32> GetVulkanPhysicalDeviceRate()
         {
-            var rates = new Dictionary<Vulkan.PhysicalDevice, UInt32>();
+            var rates = new Dictionary<PhysicalDevice, UInt32>();
 
             foreach (var physicalDevice in VulkanPhysicalDevices)
             {
@@ -186,21 +186,21 @@ namespace Graphics.Engine.VulkanDriver
 
                 switch (deviceProperties.DeviceType)
                 {
-                    case Vulkan.PhysicalDeviceType.Other:
+                    case PhysicalDeviceType.Other:
                         // Тип устройства не известен и нам не интересен
                         rates.Add(physicalDevice, deviceRate);
                         continue;
-                    case Vulkan.PhysicalDeviceType.DiscreteGpu:
+                    case PhysicalDeviceType.DiscreteGpu:
                         deviceRate = 10000000U;
                         break;
-                    case Vulkan.PhysicalDeviceType.IntegratedGpu:
+                    case PhysicalDeviceType.IntegratedGpu:
                         deviceRate = 100000U;
                         break;
-                    case Vulkan.PhysicalDeviceType.VirtualGpu:
+                    case PhysicalDeviceType.VirtualGpu:
                         // Тип устройства пока нам не интересен
                         rates.Add(physicalDevice, deviceRate);
                         continue;
-                    case Vulkan.PhysicalDeviceType.Cpu:
+                    case PhysicalDeviceType.Cpu:
                         // Тип устройства пока нам не интересен
                         rates.Add(physicalDevice, deviceRate);
                         continue;
@@ -216,7 +216,7 @@ namespace Graphics.Engine.VulkanDriver
                     continue;
                 }
 
-                var extensions = physicalDevice.EnumerateDeviceExtensionProperties();
+                var extensions = physicalDevice.EnumerateDeviceExtensionProperties(null);
                 if (extensions != null && extensions.Length > 0)
                 {
                     var supportSwapchain = false;
@@ -246,15 +246,15 @@ namespace Graphics.Engine.VulkanDriver
                     var supportTransfer = false;
                     foreach (var queueFamilyProperties in queues)
                     {
-                        if ((queueFamilyProperties.QueueFlags & Vulkan.QueueFlags.Graphics) == Vulkan.QueueFlags.Graphics)
+                        if ((queueFamilyProperties.QueueFlags & QueueFlags.Graphics) == QueueFlags.Graphics)
                         {
                             supportGraphics = true;
                         }
-                        if ((queueFamilyProperties.QueueFlags & Vulkan.QueueFlags.Compute) == Vulkan.QueueFlags.Compute)
+                        if ((queueFamilyProperties.QueueFlags & QueueFlags.Compute) == QueueFlags.Compute)
                         {
                             supportCompute = true;
                         }
-                        if ((queueFamilyProperties.QueueFlags & Vulkan.QueueFlags.Transfer) == Vulkan.QueueFlags.Transfer)
+                        if ((queueFamilyProperties.QueueFlags & QueueFlags.Transfer) == QueueFlags.Transfer)
                         {
                             supportTransfer = true;
                         }

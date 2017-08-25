@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Graphics.Engine.Settings;
+using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
 {
@@ -13,11 +14,11 @@ namespace Graphics.Engine.VulkanDriver
         private Boolean _isVulkanInit;
         
         /// <summary>
-        /// Обертка над Vulkan.Device и Vulkan.PhysicalDevice (выбранный видеоадаптер)
-        /// Vulkan.Device - это логическое устройство, 
-        /// и таких устройств можно создать много на основе одного Vulkan.PhysicalDevice,
+        /// Обертка над Device и PhysicalDevice (выбранный видеоадаптер)
+        /// Device - это логическое устройство, 
+        /// и таких устройств можно создать много на основе одного PhysicalDevice,
         /// при этом каждое такое логичесвое устройство может иметь разную доступную функциональность
-        /// Скажем так, пусть устройство Vulkan.PhysicalDevice имеет 2 фичи: VkBool32 geometryShader и VkBool32 tessellationShader;
+        /// Скажем так, пусть устройство PhysicalDevice имеет 2 фичи: VkBool32 geometryShader и VkBool32 tessellationShader;
         /// Так вот мы можем создать два логических устройства, одно из которых будет поддерживать одно из фич, а второе оставшуюся фичу
         /// </summary>
         private VulkanDevice _vulkanDevice;
@@ -51,6 +52,11 @@ namespace Graphics.Engine.VulkanDriver
         /// </summary>
         public VulkanLogicalDevice VulkanLogicalDevice { get; private set; }
 
+        /// <summary>
+        /// Поверхности отрисовки Vulkan. 
+        /// </summary>
+        public VulkanSurface VulkanSurface { get; private set; }
+
         #endregion
 
         public VulkanManager()
@@ -58,7 +64,7 @@ namespace Graphics.Engine.VulkanDriver
             _isVulkanInit = false;
         }
 
-        public void Init()
+        public void Init(INativeWindow vulkanWindow)
         {
             if (_isVulkanInit) return;
 
@@ -67,11 +73,19 @@ namespace Graphics.Engine.VulkanDriver
                 if (_isVulkanInit) return;
                 // Создадим экземпляр Vulkan
                 CreateInstance();
+                // Создадим поверхность
+                CreateSurface(vulkanWindow);
                 // Выбираем наилучшее для нас устройство
                 CreatePhysicalDevice();
                 // Создадим логическое устройство связанное с видеоадаптером
                 CreateLogicalDevice();
             }
+        }
+
+        private void CreateSurface(INativeWindow vulkanWindow)
+        {
+            VulkanSurface = new VulkanSurface(VulkanInstance, vulkanWindow);
+            VulkanSurface.Create();
         }
 
         #region private sector
@@ -80,8 +94,8 @@ namespace Graphics.Engine.VulkanDriver
         {
             VulkanInstance = new VulkanInstance();
             // Так как мы собираемся рендерить в окно, то надо подключить расширения WSI (Window System Integration)
-            var requestedLayers = new List<Vulkan.LayerProperties>();
-            var requestedExtentions = new List<Vulkan.ExtensionProperties>();
+            var requestedLayers = new List<LayerProperties>();
+            var requestedExtentions = new List<ExtensionProperties>();
 
             var extentionNames = new List<String>
             {
@@ -139,15 +153,15 @@ namespace Graphics.Engine.VulkanDriver
 
         private void CreateLogicalDevice()
         {
-            var requestedFeatures = new Vulkan.PhysicalDeviceFeatures();
-            var requestedExtentions = new List<Vulkan.ExtensionProperties>();
+            var requestedFeatures = new PhysicalDeviceFeatures();
+            var requestedExtentions = new List<ExtensionProperties>();
             var extentionNames = new List<String>
             {
                 "VK_KHR_swapchain",
                 "VK_KHR_sampler_mirror_clamp_to_edge"
             };
 
-            //var requestedQueueTypes = Vulkan.QueueFlags.Graphics | Vulkan.QueueFlags.Compute;
+            //var requestedQueueTypes = QueueFlags.Graphics | QueueFlags.Compute;
             //_vulkanDevice = new VulkanDevice(VulkanPhysicalDevice, requestedFeatures,
             //    requestedExtensions, useSwapChain, requestedQueueTypes);
             

@@ -1,25 +1,25 @@
 ﻿using System;
-using Vulkan;
+using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
 {
     internal static class VulkanDebug
     {
-        static readonly Vulkan.Instance.DebugReportCallback DebugCallback = new Vulkan.Instance.DebugReportCallback(VulkanDebugInfo);
+        //static readonly Instance.DebugReportCallback DebugCallback = new Instance.DebugReportCallback(VulkanDebugInfo);
 
-        public static void SetupDebugging(Vulkan.Instance vulkanInstance, Vulkan.DebugReportFlagsExt flags)
+        public static void SetupDebugging(Instance vulkanInstance, DebugReportFlagsExt flags)
         {
-            vulkanInstance.EnableDebug(DebugCallback, flags);
+           // vulkanInstance.EnableDebug(DebugCallback, flags);
         }
 
-        private static Vulkan.Bool32 VulkanDebugInfo(Vulkan.DebugReportFlagsExt flags,
-            Vulkan.DebugReportObjectTypeExt objectType, UInt64 objectHandle, IntPtr location,
+        private static Bool32 VulkanDebugInfo(DebugReportFlagsExt flags,
+            DebugReportObjectTypeExt objectType, UInt64 objectHandle, IntPtr location,
             Int32 messageCode, IntPtr layerPrefix, IntPtr message, IntPtr userData)
         {
-            string layerString = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(layerPrefix);
-            string messageString = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(message);
+            var layerString = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(layerPrefix);
+            var messageString = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(message);
 
-            if ((flags & Vulkan.DebugReportFlagsExt.Error) == Vulkan.DebugReportFlagsExt.Error)
+            if ((flags & DebugReportFlagsExt.Error) == DebugReportFlagsExt.Error)
             {
                
             }

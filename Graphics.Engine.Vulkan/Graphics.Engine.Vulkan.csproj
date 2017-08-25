@@ -32,20 +32,47 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Vulkan, Version=0.0.6246.24664, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\VulkanSharp.0.1.8\lib\portable-net45+win8+MonoAndroid10\Vulkan.dll</HintPath>
+    <Reference Include="VulkanSharp, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\VulkanSharp.Windows.1.0.0.2\lib\net45\VulkanSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="VulkanSharp.Windows, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\VulkanSharp.Windows.1.0.0.2\lib\net45\VulkanSharp.Windows.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GraphicsEngine.cs" />
+    <Compile Include="INativeWindow.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\SettingsManager.cs" />
@@ -55,7 +82,15 @@
     <Compile Include="VulkanDriver\VulkanLogicalDevice.cs" />
     <Compile Include="VulkanDriver\VulkanManager.cs" />
     <Compile Include="VulkanDriver\VulkanPhysicalDevice.cs" />
+    <Compile Include="VulkanDriver\VulkanPhysicalDeviceQueueFamiliesParams.cs" />
+    <Compile Include="VulkanDriver\VulkanSurface.cs" />
     <Compile Include="VulkanDriver\VulkanTools.cs" />
+    <Compile Include="VulkanWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="VulkanWindow.Designer.cs">
+      <DependentUpon>VulkanWindow.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
