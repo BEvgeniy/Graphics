@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using Graphics.Engine.Settings;
+using Graphics.Engine.VulkanDriver.VkDevice.Logical;
+using Graphics.Engine.VulkanDriver.VkDevice.Physical;
+using Graphics.Engine.VulkanDriver.VkInstance;
+using Graphics.Engine.VulkanDriver.VkSurface;
 using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
@@ -8,11 +12,12 @@ namespace Graphics.Engine.VulkanDriver
     internal class VulkanManager
     {
         #region .fields
+
         /// <summary>
         /// Флаг - определяет был ли создан экземпляр Vulkan
         /// </summary>
         private Boolean _isVulkanInit;
-        
+
         /// <summary>
         /// Обертка над Device и PhysicalDevice (выбранный видеоадаптер)
         /// Device - это логическое устройство, 
@@ -22,6 +27,7 @@ namespace Graphics.Engine.VulkanDriver
         /// Так вот мы можем создать два логических устройства, одно из которых будет поддерживать одно из фич, а второе оставшуюся фичу
         /// </summary>
         private VulkanDevice _vulkanDevice;
+
         /// <summary>
         /// Объект для синхронизации выполнения критических участков кода. 
         /// В данном случае, позволяется, помеченный участок кода выполнять только одним потоком.
@@ -46,16 +52,11 @@ namespace Graphics.Engine.VulkanDriver
         /// либо по какой-то причине выбранный системой видаоадаптер не устраивает или не отрабатывает как от него ожидают.
         /// </summary>
         public VulkanPhysicalDevice VulkanPhysicalDevice { get; private set; }
-        
+
         /// <summary>
         /// Логическое устройство для выбранного видеоадаптера. 
         /// </summary>
         public VulkanLogicalDevice VulkanLogicalDevice { get; private set; }
-
-        /// <summary>
-        /// Поверхности отрисовки Vulkan. 
-        /// </summary>
-        public VulkanSurface VulkanSurface { get; private set; }
 
         #endregion
 
@@ -64,7 +65,7 @@ namespace Graphics.Engine.VulkanDriver
             _isVulkanInit = false;
         }
 
-        public void Init(INativeWindow vulkanWindow)
+        public void Init(INativeWindow vulkanMainWindow)
         {
             if (_isVulkanInit) return;
 
@@ -72,9 +73,7 @@ namespace Graphics.Engine.VulkanDriver
             {
                 if (_isVulkanInit) return;
                 // Создадим экземпляр Vulkan
-                CreateInstance();
-                // Создадим поверхность
-                CreateSurface(vulkanWindow);
+                CreateInstance(vulkanMainWindow);
                 // Выбираем наилучшее для нас устройство
                 CreatePhysicalDevice();
                 // Создадим логическое устройство связанное с видеоадаптером
@@ -82,106 +81,72 @@ namespace Graphics.Engine.VulkanDriver
             }
         }
 
-        private void CreateSurface(INativeWindow vulkanWindow)
-        {
-            VulkanSurface = new VulkanSurface(VulkanInstance, vulkanWindow);
-            VulkanSurface.Create();
-        }
-
         #region private sector
 
-        private void CreateInstance()
+        private void CreateInstance(INativeWindow vulkanMainWindow)
         {
             VulkanInstance = new VulkanInstance();
-            // Так как мы собираемся рендерить в окно, то надо подключить расширения WSI (Window System Integration)
-            var requestedLayers = new List<LayerProperties>();
-            var requestedExtentions = new List<ExtensionProperties>();
 
-            var extentionNames = new List<String>
+            var createInfo = new VulkanInstanceCreateInfo
             {
-                "VK_KHR_surface",
-                "VK_KHR_win32_surface"
+                IsDebugEnabled = SettingsManager.IsDebugEnabled,
+                VulkanApiVersion = SettingsManager.VulkanApiVersion,
+                ApplicationName = SettingsManager.ApplicationName,
+                EngineName = SettingsManager.EngineName,
+                ApplicationVersion = SettingsManager.ApplicationVersion,
+                EngineVersion = SettingsManager.EngineVersion,
+                RequestedExtentionNames = SettingsManager.RequestedInstanceExtentionNames,
+                RequestedLayerNames = SettingsManager.RequestedInstanceLayerNames,
+                VulkanWindow = vulkanMainWindow
             };
 
-            if (SettingsManager.IsDebugEnabled)
-            {
-                extentionNames.Add("VK_EXT_debug_report");
-            }
-
-            foreach (var name in extentionNames)
-            {
-                var extention = VulkanInstance.GetExtensionPropertiesByName(name);
-                if (extention == null)
-                {
-                    throw new Exception("Среди доступных расширений в системе, не обнаружено расширение с именем '" + name + "'");
-                }
-                requestedExtentions.Add(extention);
-            }
-          
-            // Если собираемся отлаживаться и проходить валидацию по слоям, надо подключить расширение отладки и слои валидации
-            if (SettingsManager.IsDebugEnabled)
-            {  
-                foreach (var layer in VulkanInstance.VulkanAvailableInstanceLayers)
-                {
-                    if (
-                        layer.LayerName == "VK_LAYER_LUNARG_vktrace"
-                        || layer.LayerName == "VK_LAYER_LUNARG_api_dump"
-                        // || layer.LayerName == "VK_LAYER_GOOGLE_threading" 
-                        // || layer.LayerName == "VK_LAYER_GOOGLE_unique_objects" 
-                        // ||layer.LayerName == "VK_LAYER_VALVE_steam_overlay"
-                    )
-                    {
-                        continue;
-                    }
-                    requestedLayers.Add(layer);
-                }
-            }
-            VulkanInstance.Create(requestedExtentions, requestedLayers);
+            VulkanInstance.Create(createInfo);
         }
 
         private void CreatePhysicalDevice()
         {
-            // Возможно стоит передавать параметры для поиска подходящего видеоадаптера
-            var vulkanPhysicalDevice = VulkanInstance.GetVulkanPhysicalDevice();
-            if (vulkanPhysicalDevice == null)
+            var searchInfo = new VulkanPhysicalDeviceSearchInfo
+            {
+                IsRequestedSupportGraphicsQueue = true,
+                IsRequestedSupportPresentationQueue = true,
+                VulkanSurface = VulkanInstance.VulkanSurface,
+                IsRequestedSupportTransferQueue = false, // пока нет нужды
+                IsRequestedSupportComputeQueue = false, // пока нет нужды
+                RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
+                PreferredType = PhysicalDeviceType.DiscreteGpu,
+                PreferredVulkanApiVersion = SettingsManager.VulkanApiVersion,
+                RequestedExtentionNames = SettingsManager.RequestedPhysicalDeviceExtentionNames
+            };
+
+            var foundPhysicalDevice = VulkanInstance.FindSuitablePhysicalDevice(searchInfo);
+            if (foundPhysicalDevice == null)
             {
                 throw new Exception("Не найден подходящий видеоадаптер для работы с приложением.");
             }
-            VulkanPhysicalDevice = new VulkanPhysicalDevice(VulkanInstance, vulkanPhysicalDevice);
-            VulkanPhysicalDevice.Create();
+
+            var createInfo = new VulkanPhysicalDeviceCreateInfo
+            {
+                VulkanInstance = VulkanInstance,
+                VulkanSurface = VulkanInstance.VulkanSurface,
+                PhysicalDevice = foundPhysicalDevice
+            };
+
+            VulkanPhysicalDevice = new VulkanPhysicalDevice();
+            VulkanPhysicalDevice.Create(createInfo);
         }
 
         private void CreateLogicalDevice()
         {
-            var requestedFeatures = new PhysicalDeviceFeatures();
-            var requestedExtentions = new List<ExtensionProperties>();
-            var extentionNames = new List<String>
+            var createInfo = new VulkanLogicalDeviceCreateInfo
             {
-                "VK_KHR_swapchain",
-                "VK_KHR_sampler_mirror_clamp_to_edge"
+                VulkanPhysicalDevice = VulkanPhysicalDevice,
+                VulkanSurface = VulkanInstance.VulkanSurface,
+                RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
+                RequestedExtentionNames = SettingsManager.RequestedLogicalDeviceExtentionNames
             };
 
-            //var requestedQueueTypes = QueueFlags.Graphics | QueueFlags.Compute;
-            //_vulkanDevice = new VulkanDevice(VulkanPhysicalDevice, requestedFeatures,
-            //    requestedExtensions, useSwapChain, requestedQueueTypes);
-            
-            if (SettingsManager.IsDebugEnabled)
-            {
-                extentionNames.Add("VK_EXT_debug_marker");
-            }
-
-            foreach (var name in extentionNames)
-            {
-                var extention = VulkanPhysicalDevice.GetExtensionPropertiesByName(name);
-                if (extention == null)
-                {
-                    throw new Exception("Среди доступных расширений видеоадаптера не обнаружено расширение с именем '" + name + "'");
-                }
-                requestedExtentions.Add(extention);
-            }
-
-            VulkanLogicalDevice = new VulkanLogicalDevice(VulkanPhysicalDevice);
-            VulkanLogicalDevice.Create(requestedFeatures, requestedExtentions);
+            VulkanLogicalDevice = new VulkanLogicalDevice();
+            VulkanLogicalDevice.Create(createInfo);
         }
 
         #endregion

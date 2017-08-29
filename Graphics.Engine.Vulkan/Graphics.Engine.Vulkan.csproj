@@ -76,14 +76,20 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\SettingsManager.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Logical\VulkanLogicalDeviceCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceRate.cs" />
+    <Compile Include="VulkanDriver\VkSurface\VulkanSurfaceCreateInfo.cs" />
     <Compile Include="VulkanDriver\VulkanDebug.cs" />
     <Compile Include="VulkanDriver\VulkanDevice.cs" />
-    <Compile Include="VulkanDriver\VulkanInstance.cs" />
-    <Compile Include="VulkanDriver\VulkanLogicalDevice.cs" />
+    <Compile Include="VulkanDriver\VkInstance\VulkanInstance.cs" />
+    <Compile Include="VulkanDriver\VkInstance\VulkanInstanceCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Logical\VulkanLogicalDevice.cs" />
     <Compile Include="VulkanDriver\VulkanManager.cs" />
-    <Compile Include="VulkanDriver\VulkanPhysicalDevice.cs" />
-    <Compile Include="VulkanDriver\VulkanPhysicalDeviceQueueFamiliesParams.cs" />
-    <Compile Include="VulkanDriver\VulkanSurface.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDevice.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceQueueFamiliesParams.cs" />
+    <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceSearchInfo.cs" />
+    <Compile Include="VulkanDriver\VkSurface\VulkanSurface.cs" />
     <Compile Include="VulkanDriver\VulkanTools.cs" />
     <Compile Include="VulkanWindow.cs">
       <SubType>Form</SubType>
@@ -96,5 +102,6 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,26 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using VulkanSharp;
- 
-namespace Graphics.Engine.VulkanDriver
+
+namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 {
     /// <summary>
     /// Создает объект-обертку над логическим устройством (видеоадаптером).
     /// </summary>
-    internal class VulkanLogicalDevice
+    internal sealed class VulkanLogicalDevice
     {
-        public VulkanLogicalDevice(VulkanPhysicalDevice vulkanPhysicalDevice)
+        public VulkanLogicalDevice()
         {
-            VulkanPhysicalDevice = vulkanPhysicalDevice;
+            VulkanEnabledLogicalDeviceExtentions  = new List<ExtensionProperties>();
         }
         
         /// <summary>
         /// Видеоадаптер, для которого было создано логическое устройство (помещенное в объект обертку).
         /// </summary>
-        public VulkanPhysicalDevice VulkanPhysicalDevice { get; }
+        public VulkanPhysicalDevice VulkanPhysicalDevice { get; private set; }
 
         /// <summary>
         /// Логическое устройство созданное поверх физического (видеоадаптер). 
@@ -29,7 +26,7 @@ namespace Graphics.Engine.VulkanDriver
         /// свойства (фичи), которые предлагает нам физическое устройство. Поэтому мы можем создать несколько логических устройств, у которых
         /// для создания использовался один и тот же видеоадаптер.
         /// </summary>
-        public Device Device { get; }
+        public Device Device { get; private set; }
 
         /// <summary>
         /// Названия расширений, которые подключены к созданному логическому устройству.
@@ -44,14 +41,10 @@ namespace Graphics.Engine.VulkanDriver
         /// <summary>
         /// Создает логическое устройство с указанными пользователем расширениями и свойствами (фичами).
         /// </summary>
-        /// <param name="requestedFeatures"></param>
-        /// <param name="requestedExtentions"></param>
-        public void Create(PhysicalDeviceFeatures requestedFeatures, List<ExtensionProperties> requestedExtentions)
+        public void Create(VulkanLogicalDeviceCreateInfo vulkanLogicalDeviceCreateInfo)
         {
-            VulkanEnabledLogicalDeviceExtentions = requestedExtentions;
-            VulkanEnabledLogicalDeviceFeatures = requestedFeatures;
-
-
+            //VulkanEnabledLogicalDeviceExtentions = requestedExtentions;
+            //VulkanEnabledLogicalDeviceFeatures = requestedFeatures;
         }
     }
 }
