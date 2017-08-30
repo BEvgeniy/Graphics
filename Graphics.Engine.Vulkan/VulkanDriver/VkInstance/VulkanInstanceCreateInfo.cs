@@ -14,7 +14,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
         /// которые требуется иметь предустановленными в системе (это как я ни текущий момент это понимаю, но могу ошибаться)
         /// при создании экземпляра Vulkan.
         /// </summary>
-        public IEnumerable<String> RequestedExtentionNames { get; set; }
+        public IEnumerable<String> RequestedExtensionNames { get; set; }
 
         /// <summary>
         /// Имена слоев, указанные в файле конфигурации, 

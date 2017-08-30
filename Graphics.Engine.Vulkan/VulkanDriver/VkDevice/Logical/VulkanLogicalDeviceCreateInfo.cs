@@ -31,6 +31,23 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         /// <summary>
         /// Расширения, которые должны обязательно являться подмножеством физического устройства
         /// </summary>
-        public IEnumerable<String> RequestedExtentionNames { get; set; }
+        public IEnumerable<String> RequestedExtensionNames { get; set; }
+
+        public Boolean IsRequestedCreatePresentationQueue { get; set; }
+
+        /// <summary>
+        /// Установлен, в случае, необходимо создать очередь поддерживающую работу с графическими командами
+        /// </summary>
+        public Boolean IsRequestedCreateGraphicsQueue { get; set; }
+
+        /// <summary>
+        /// Установлен, в случае, необходимо создать очередь поддерживающую работу с командами вычислений
+        /// </summary>
+        public Boolean IsRequestedCreateComputeQueue { get; set; }
+
+        /// <summary>
+        /// Установлен, в случае, необходимо создать очередь поддерживающую работу с командами работы с памятью
+        /// </summary>
+        public Boolean IsRequestedCreateTransferQueue { get; set; }
     }
 }

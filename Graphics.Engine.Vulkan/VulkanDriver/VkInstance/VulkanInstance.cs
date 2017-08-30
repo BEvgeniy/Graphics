@@ -20,7 +20,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
             AvailableInstanceExtensions = new List<ExtensionProperties>();
             AvailableInstanceLayers = new List<LayerProperties>();
             PhysicalDevices = new List<PhysicalDevice>();
-            EnabledInstanceExtentions = new List<ExtensionProperties>();
+            EnabledInstanceExtensions = new List<ExtensionProperties>();
             EnabledInstanceLayers = new List<LayerProperties>();
         }
 
@@ -44,7 +44,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
         /// <summary>
         /// Названия расширений, которые подключены к созданному экземпляру Vulkan
         /// </summary>
-        public IReadOnlyList<ExtensionProperties> EnabledInstanceExtentions { get; private set; }
+        public IReadOnlyList<ExtensionProperties> EnabledInstanceExtensions { get; private set; }
 
         /// <summary>
         /// Названия слоев, которые подключены к созданному экземпляру Vulkan
@@ -61,15 +61,15 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
         /// </summary>
         public VulkanSurface VulkanSurface { get; private set; }
 
-        public ExtensionProperties GetAvailableInstanceExtensionPropertiesByName(String extentionName)
+        public ExtensionProperties GetAvailableInstanceExtensionPropertiesByName(String extensionName)
         {
-            return GetExtensionPropertiesByName(AvailableInstanceExtensions, extentionName);
+            return GetExtensionPropertiesByName(AvailableInstanceExtensions, extensionName);
         }
 
-        public static ExtensionProperties GetExtensionPropertiesByName(IReadOnlyList<ExtensionProperties> extentions,
-            String extentionName)
+        public static ExtensionProperties GetExtensionPropertiesByName(IReadOnlyList<ExtensionProperties> extensions,
+            String extensionName)
         {
-            return extentions.FirstOrDefault(e => e.ExtensionName == extentionName);
+            return extensions.FirstOrDefault(e => e.ExtensionName == extensionName);
         }
 
         public LayerProperties GetLayerPropertiesByName(String layerName)
@@ -129,18 +129,18 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 }
 
                 var requestedLayers = new List<LayerProperties>();
-                var requestedExtentions = new List<ExtensionProperties>();
+                var requestedExtensions = new List<ExtensionProperties>();
 
-                foreach (var name in vulkanInstanceCreateInfo.RequestedExtentionNames)
+                foreach (var name in vulkanInstanceCreateInfo.RequestedExtensionNames)
                 {
-                    var extention = GetAvailableInstanceExtensionPropertiesByName(name);
-                    if (extention == null)
+                    var extension = GetAvailableInstanceExtensionPropertiesByName(name);
+                    if (extension == null)
                     {
                         throw new Exception(
                             "Среди доступных расширений в системе, не обнаружено запрошенное расширение с именем '" +
                             name + "'");
                     }
-                    requestedExtentions.Add(extention);
+                    requestedExtensions.Add(extension);
                 }
 
                 // Если собираемся отлаживаться и проходить валидацию по слоям, надо подключить расширение отладки и слои валидации
@@ -156,7 +156,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                     requestedLayers.Add(layer);
                 }
 
-                EnabledInstanceExtentions = requestedExtentions;
+                EnabledInstanceExtensions = requestedExtensions;
                 EnabledInstanceLayers = requestedLayers;
                 // Заполним необходимые параметры для создания экземпляра Vulkan
                 var appInfo = new ApplicationInfo
@@ -179,8 +179,8 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 var createInfo = new InstanceCreateInfo
                 {
                     ApplicationInfo = appInfo,
-                    EnabledExtensionCount = (UInt32) EnabledInstanceExtentions.Count,
-                    EnabledExtensionNames = EnabledInstanceExtentions.Select(e => e.ExtensionName).ToArray(),
+                    EnabledExtensionCount = (UInt32) EnabledInstanceExtensions.Count,
+                    EnabledExtensionNames = EnabledInstanceExtensions.Select(e => e.ExtensionName).ToArray(),
                     EnabledLayerCount = (UInt32) EnabledInstanceLayers.Count,
                     EnabledLayerNames = EnabledInstanceLayers.Select(e => e.LayerName).ToArray()
                 };
@@ -266,7 +266,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 var supportCompute = false;
                 var supportTransfer = false;
                 var supportPresentation = false;
-                var supportRequestedExtentions = false;
+                var supportRequestedExtensions = false;
                 // ---
                 var properties = physicalDevice.GetProperties();
                 var supportedApiVersion = VulkanTools.GetDotNetVersion(properties.ApiVersion);
@@ -319,25 +319,25 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                             deviceRate += 1;
                         }
                     }
-                    if (searchInfo.RequestedExtentionNames != null && searchInfo.RequestedExtentionNames.Any())
+                    if (searchInfo.RequestedExtensionNames != null && searchInfo.RequestedExtensionNames.Any())
                     {
                         var extensions = physicalDevice.EnumerateDeviceExtensionProperties(null);
                         if (extensions != null && extensions.Length > 0)
                         {
-                            var allExtentionsSupported = true;
-                            foreach (var extensionName in searchInfo.RequestedExtentionNames)
+                            var allExtensionsSupported = true;
+                            foreach (var extensionName in searchInfo.RequestedExtensionNames)
                             {
-                                var extention = GetExtensionPropertiesByName(extensions, extensionName);
-                                if (extention == null)
+                                var extension = GetExtensionPropertiesByName(extensions, extensionName);
+                                if (extension == null)
                                 {
-                                    allExtentionsSupported = false;
+                                    allExtensionsSupported = false;
                                     break;
                                 }
                             }
-                            supportRequestedExtentions = allExtentionsSupported;
+                            supportRequestedExtensions = allExtensionsSupported;
                         }
 
-                        if (!supportRequestedExtentions)
+                        if (!supportRequestedExtensions)
                         {
                             // Если физическое устройство не поддерживает все необходимые нам расширения
                             // то мы такое устройство не рассматриваем
@@ -351,7 +351,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                     }
                     else
                     {
-                        supportRequestedExtentions = true;
+                        supportRequestedExtensions = true;
                         deviceRate += 1;
                     }
 

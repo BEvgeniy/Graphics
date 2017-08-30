@@ -95,7 +95,7 @@ namespace Graphics.Engine.VulkanDriver
                 EngineName = SettingsManager.EngineName,
                 ApplicationVersion = SettingsManager.ApplicationVersion,
                 EngineVersion = SettingsManager.EngineVersion,
-                RequestedExtentionNames = SettingsManager.RequestedInstanceExtentionNames,
+                RequestedExtensionNames = SettingsManager.RequestedInstanceExtensionNames,
                 RequestedLayerNames = SettingsManager.RequestedInstanceLayerNames,
                 VulkanWindow = vulkanMainWindow
             };
@@ -115,7 +115,7 @@ namespace Graphics.Engine.VulkanDriver
                 RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
                 PreferredType = PhysicalDeviceType.DiscreteGpu,
                 PreferredVulkanApiVersion = SettingsManager.VulkanApiVersion,
-                RequestedExtentionNames = SettingsManager.RequestedPhysicalDeviceExtentionNames
+                RequestedExtensionNames = SettingsManager.RequestedPhysicalDeviceExtensionNames
             };
 
             var foundPhysicalDevice = VulkanInstance.FindSuitablePhysicalDevice(searchInfo);
@@ -142,7 +142,10 @@ namespace Graphics.Engine.VulkanDriver
                 VulkanPhysicalDevice = VulkanPhysicalDevice,
                 VulkanSurface = VulkanInstance.VulkanSurface,
                 RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
-                RequestedExtentionNames = SettingsManager.RequestedLogicalDeviceExtentionNames
+                RequestedExtensionNames = SettingsManager.RequestedLogicalDeviceExtensionNames,
+                IsRequestedCreateGraphicsQueue = true,
+                IsRequestedCreateComputeQueue = true,
+                IsRequestedCreateTransferQueue = true
             };
 
             VulkanLogicalDevice = new VulkanLogicalDevice();

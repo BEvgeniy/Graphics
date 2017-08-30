@@ -31,7 +31,7 @@ namespace Graphics.Engine.Settings
                     EngineName = "Atlas Engine";
                     EngineVersion = new Version(1, 0, 0);
                     // Задание необходимых расширений и дополнительных слоев
-                    InitExtentionsAndLayers();
+                    InitExtensionsAndLayers();
                 }
                 catch (Exception ex)
                 {
@@ -44,33 +44,33 @@ namespace Graphics.Engine.Settings
             }
         }
 
-        private static void InitExtentionsAndLayers()
+        private static void InitExtensionsAndLayers()
         {
             // Отрисовка в окно требуется всегда
-            var extentionNames = new List<String>
+            var extensionNames = new List<String>
             {
                 "VK_KHR_surface",
                 "VK_KHR_win32_surface"
             };
 
             // Отрисовка в окно требуется всегда, следовательно и цепочка переключений тоже требуется всегда
-            var physicalDeviceExtentionNames = new List<String>
+            var physicalDeviceExtensionNames = new List<String>
             {
                 "VK_KHR_swapchain",
                // "VK_KHR_sampler_mirror_clamp_to_edge"
             };
 
-            var logicalDeviceExtentionNames = physicalDeviceExtentionNames;
+            var logicalDeviceExtensionNames = physicalDeviceExtensionNames;
 
             var layerNames = new List<String>();
 
             if (IsDebugEnabled)
             {
                 // Если собираемся отлаживаться и проходить валидацию по слоям, надо подключить расширение отладки и слои валидации
-                extentionNames.Add("VK_EXT_debug_report");
+                extensionNames.Add("VK_EXT_debug_report");
 
-               // physicalDeviceExtentionNames.Add("VK_EXT_debug_marker");
-               // logicalDeviceExtentionNames.Add("VK_EXT_debug_marker");
+               // physicalDeviceExtensionNames.Add("VK_EXT_debug_marker");
+               // logicalDeviceExtensionNames.Add("VK_EXT_debug_marker");
 
                 layerNames.Add(
                     "VK_LAYER_LUNARG_standard_validation"
@@ -94,10 +94,10 @@ namespace Graphics.Engine.Settings
 
             }
 
-            RequestedInstanceExtentionNames = extentionNames;
+            RequestedInstanceExtensionNames = extensionNames;
             RequestedInstanceLayerNames = layerNames;
-            RequestedPhysicalDeviceExtentionNames = physicalDeviceExtentionNames;
-            RequestedLogicalDeviceExtentionNames = logicalDeviceExtentionNames;
+            RequestedPhysicalDeviceExtensionNames = physicalDeviceExtensionNames;
+            RequestedLogicalDeviceExtensionNames = logicalDeviceExtensionNames;
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Graphics.Engine.Settings
         /// которые требуется иметь предустановленными в системе (это как я ни текущий момент это понимаю, но могу ошибаться)
         /// при создании экземпляра Vulkan.
         /// </summary>
-        public static IEnumerable<String> RequestedInstanceExtentionNames { get; private set; }
+        public static IEnumerable<String> RequestedInstanceExtensionNames { get; private set; }
 
         /// <summary>
         /// Имена слоев, указанные в файле конфигурации, 
@@ -166,7 +166,7 @@ namespace Graphics.Engine.Settings
         /// Имена расширений, которые должны поддерживаться физическим устройством, 
         /// при поиске подходящего.
         /// </summary>
-        public static IEnumerable<String> RequestedPhysicalDeviceExtentionNames { get; private set; }
+        public static IEnumerable<String> RequestedPhysicalDeviceExtensionNames { get; private set; }
 
         /// <summary>
         /// Имена расширений, которые должны поддерживаться физическим устройством, 
@@ -175,6 +175,6 @@ namespace Graphics.Engine.Settings
         /// то расширения логического устройства должно быть либо подмножеством физического, 
         /// либо целым множеством, но никак иначе
         /// </summary>
-        public static IEnumerable<String> RequestedLogicalDeviceExtentionNames { get; private set; }
+        public static IEnumerable<String> RequestedLogicalDeviceExtensionNames { get; private set; }
     }
 }

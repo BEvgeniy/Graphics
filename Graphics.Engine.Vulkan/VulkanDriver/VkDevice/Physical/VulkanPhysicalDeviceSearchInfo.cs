@@ -73,6 +73,6 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
         /// <summary>
         /// Расширения, которые должны обязательно поддерживаться физическим устройством
         /// </summary>
-        public IEnumerable<String> RequestedExtentionNames { get; set; }
+        public IEnumerable<String> RequestedExtensionNames { get; set; }
     }
 }

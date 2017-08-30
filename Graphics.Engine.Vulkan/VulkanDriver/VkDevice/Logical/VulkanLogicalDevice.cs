@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using VulkanSharp;
 
@@ -9,11 +11,13 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
     /// </summary>
     internal sealed class VulkanLogicalDevice
     {
+        private Boolean _isInit;
+
         public VulkanLogicalDevice()
         {
-            VulkanEnabledLogicalDeviceExtentions  = new List<ExtensionProperties>();
+            VulkanEnabledLogicalDeviceExtensions = new List<ExtensionProperties>();
         }
-        
+
         /// <summary>
         /// Видеоадаптер, для которого было создано логическое устройство (помещенное в объект обертку).
         /// </summary>
@@ -29,9 +33,31 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         public Device Device { get; private set; }
 
         /// <summary>
+        /// Очередь поддерживающая работу с графическими командами
+        /// </summary>
+        public Queue GraphicsQueue { get; private set; }
+
+        /// <summary>
+        /// Очередь поддерживающая вывод изображения на экран
+        /// Идеальный вариант, когда <see cref="GraphicsQueue"/> и эта очередь
+        /// являются одним и тем же семейством очередей с одним и тем же индексом
+        /// </summary>
+        public Queue PresentQueue { get; private set; }
+
+        /// <summary>
+        /// Очередь поддерживающая работу с командами вычислений
+        /// </summary>
+        public Queue ComputeQueue { get; private set; }
+
+        /// <summary>
+        /// Очередь поддерживающая работу с командами работы с памятью
+        /// </summary>
+        public Queue TransferQueue { get; private set; }
+
+        /// <summary>
         /// Названия расширений, которые подключены к созданному логическому устройству.
         /// </summary>
-        public IReadOnlyList<ExtensionProperties> VulkanEnabledLogicalDeviceExtentions { get; private set; }
+        public IReadOnlyList<ExtensionProperties> VulkanEnabledLogicalDeviceExtensions { get; private set; }
 
         /// <summary>
         /// Возможности физического устройства, которые используются логическим устройством.
@@ -43,8 +69,149 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         /// </summary>
         public void Create(VulkanLogicalDeviceCreateInfo vulkanLogicalDeviceCreateInfo)
         {
-            //VulkanEnabledLogicalDeviceExtentions = requestedExtentions;
-            //VulkanEnabledLogicalDeviceFeatures = requestedFeatures;
+            if (_isInit)
+            {
+                return;
+            }
+
+            lock (this)
+            {
+                if (_isInit)
+                {
+                    return;
+                }
+
+                VulkanPhysicalDevice = vulkanLogicalDeviceCreateInfo.VulkanPhysicalDevice;
+
+                var extensions = new List<ExtensionProperties>();
+                foreach (var name in vulkanLogicalDeviceCreateInfo.RequestedExtensionNames)
+                {
+                    var extension = VulkanPhysicalDevice.GetExtensionPropertiesByName(name);
+                    if (extension == null)
+                    {
+                        throw new Exception(
+                            "Среди доступных расширений поддерживаемых физическим устройством, не обнаружено запрошенное расширение с именем '" +
+                            name + "'");
+                    }
+                    extensions.Add(extension);
+                }
+
+                VulkanEnabledLogicalDeviceExtensions = extensions;
+                // TODO: Как только определимся с поддерживаемой функциональностью, тут же сделать проверки на соответствие
+                VulkanEnabledLogicalDeviceFeatures = vulkanLogicalDeviceCreateInfo.RequestedFeatures;
+
+                // Необходимые типы очередей должны задаваться на этапе создания логического устройства
+
+                var queueCreateInfos = new List<DeviceQueueCreateInfo>();
+
+                // Get queue family indices for the requested queue family types
+                // Note that the indices may overlap depending on the implementation
+
+                const Single defaultQueuePriority = 0.0f;
+
+                // Очередь для отрисовки графики
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
+                {
+                    var queueInfo = new DeviceQueueCreateInfo
+                    {
+                        QueueFamilyIndex = (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex,
+                        QueueCount = 1,
+                        QueuePriorities = new[] {defaultQueuePriority}
+                    };
+                    queueCreateInfos.Add(queueInfo);
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateComputeQueue)
+                {
+                    if ((UInt32) VulkanPhysicalDevice.ComputeQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex)
+                    {
+                        var queueInfo = new DeviceQueueCreateInfo
+                        {
+                            QueueFamilyIndex = (UInt32) VulkanPhysicalDevice.ComputeQueueIndex,
+                            QueueCount = 1,
+                            QueuePriorities = new[] {defaultQueuePriority}
+                        };
+                        queueCreateInfos.Add(queueInfo);
+                    }
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateTransferQueue)
+                {
+                    if ((UInt32) VulkanPhysicalDevice.TransferQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex &&
+                        (UInt32) VulkanPhysicalDevice.TransferQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.ComputeQueueIndex)
+                    {
+                        var queueInfo = new DeviceQueueCreateInfo
+                        {
+                            QueueFamilyIndex = (UInt32) VulkanPhysicalDevice.TransferQueueIndex,
+                            QueueCount = 1,
+                            QueuePriorities = new[] {defaultQueuePriority}
+                        };
+                        queueCreateInfos.Add(queueInfo);
+                    }
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreatePresentationQueue)
+                {
+                    if ((UInt32) VulkanPhysicalDevice.PresentQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex &&
+                        (UInt32) VulkanPhysicalDevice.PresentQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.ComputeQueueIndex &&
+                        (UInt32) VulkanPhysicalDevice.PresentQueueIndex !=
+                        (UInt32) VulkanPhysicalDevice.TransferQueueIndex)
+                    {
+                        var queueInfo = new DeviceQueueCreateInfo
+                        {
+                            QueueFamilyIndex = (UInt32) VulkanPhysicalDevice.PresentQueueIndex,
+                            QueueCount = 1,
+                            QueuePriorities = new[] {defaultQueuePriority}
+                        };
+                        queueCreateInfos.Add(queueInfo);
+                    }
+                }
+
+                var deviceCreateInfo = new DeviceCreateInfo {EnabledFeatures = VulkanEnabledLogicalDeviceFeatures};
+
+                if (queueCreateInfos.Count > 0)
+                {
+                    deviceCreateInfo.QueueCreateInfoCount = (UInt32) queueCreateInfos.Count;
+                    deviceCreateInfo.QueueCreateInfos = queueCreateInfos.ToArray();
+                }
+
+                if (VulkanEnabledLogicalDeviceExtensions.Count > 0)
+                {
+                    deviceCreateInfo.EnabledExtensionCount = (UInt32) VulkanEnabledLogicalDeviceExtensions.Count;
+                    deviceCreateInfo.EnabledExtensionNames = VulkanEnabledLogicalDeviceExtensions
+                        .Select(e => e.ExtensionName)
+                        .ToArray();
+                }
+
+                Device = VulkanPhysicalDevice.PhysicalDevice.CreateDevice(deviceCreateInfo);
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
+                {
+                    GraphicsQueue = Device.GetQueue((UInt32) VulkanPhysicalDevice.GraphicsQueueIndex, 0);
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateComputeQueue)
+                {
+                    ComputeQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.ComputeQueueIndex, 0);
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateTransferQueue)
+                {
+                    TransferQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.TransferQueueIndex, 0);
+                }
+
+                if (vulkanLogicalDeviceCreateInfo.IsRequestedCreatePresentationQueue)
+                {
+                    TransferQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.PresentQueueIndex, 0);
+                }
+
+                _isInit = true;
+            }
         }
     }
 }

@@ -17,6 +17,10 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
         {
             PhysicalDeviceSupportedExtensions = new List<ExtensionProperties>();
             PhysicalDeviceQueueFamilyProperties = new List<QueueFamilyProperties>();
+            PresentQueueIndex = -1;
+            ComputeQueueIndex = -1;
+            GraphicsQueueIndex = -1;
+            TransferQueueIndex = -1;
         }
 
         /// <summary>
@@ -260,9 +264,9 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
             }
         }
 
-        public ExtensionProperties GetExtensionPropertiesByName(String extentionName)
+        public ExtensionProperties GetExtensionPropertiesByName(String extensionName)
         {
-            return PhysicalDeviceSupportedExtensions.FirstOrDefault(e => e.ExtensionName == extentionName);
+            return PhysicalDeviceSupportedExtensions.FirstOrDefault(e => e.ExtensionName == extensionName);
         }
     }
 }
