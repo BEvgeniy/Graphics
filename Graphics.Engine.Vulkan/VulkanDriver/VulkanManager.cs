@@ -5,6 +5,7 @@ using Graphics.Engine.VulkanDriver.VkDevice.Logical;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkInstance;
 using Graphics.Engine.VulkanDriver.VkSurface;
+using Graphics.Engine.VulkanDriver.VkSwapchain;
 using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
@@ -58,6 +59,11 @@ namespace Graphics.Engine.VulkanDriver
         /// </summary>
         public VulkanLogicalDevice VulkanLogicalDevice { get; private set; }
 
+        /// <summary>
+        /// Цепочка переключений (своп). 
+        /// </summary>
+        public VulkanSwapchain VulkanSwapchain { get; private set; }
+
         #endregion
 
         public VulkanManager()
@@ -78,7 +84,23 @@ namespace Graphics.Engine.VulkanDriver
                 CreatePhysicalDevice();
                 // Создадим логическое устройство связанное с видеоадаптером
                 CreateLogicalDevice();
+                // Создадим цепочку переключений
+                CreateSwapchain();
+
             }
+        }
+
+        private void CreateSwapchain()
+        {
+            var createInfo = new VulkanSwapchainCreateInfo
+            {
+                VulkanPhysicalDevice = VulkanPhysicalDevice,
+                VulkanLogicalDevice = VulkanLogicalDevice,
+                VulkanSurface = VulkanInstance.VulkanSurface
+            };
+
+            VulkanSwapchain = new VulkanSwapchain();
+            VulkanSwapchain.Create(createInfo);
         }
 
         #region private sector

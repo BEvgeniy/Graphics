@@ -80,6 +80,8 @@
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceCreateInfo.cs" />
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceRate.cs" />
     <Compile Include="VulkanDriver\VkSurface\VulkanSurfaceCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkSwapchain\VulkanSwapchain.cs" />
+    <Compile Include="VulkanDriver\VkSwapchain\VulkanSwapchainCreateInfo.cs" />
     <Compile Include="VulkanDriver\VulkanDebug.cs" />
     <Compile Include="VulkanDriver\VulkanDevice.cs" />
     <Compile Include="VulkanDriver\VkInstance\VulkanInstance.cs" />

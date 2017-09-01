@@ -104,6 +104,11 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
             private set;
         }
 
+        public SurfaceCapabilitiesKhr AvailableSurfaceCapabilities { get; private set; }
+        public IReadOnlyList<SurfaceFormatKhr> AvailableSurfaceFormats { get; private set; }
+        public IReadOnlyList<PresentModeKhr> AvailableSurfacePresentModes { get; private set; }
+
+
         public void Create(VulkanPhysicalDeviceCreateInfo vulkanPhysicalDeviceCreateInfo)
         {
             if (_isInit)
@@ -117,7 +122,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 {
                     return;
                 }
-
+                
                 PhysicalDevice = vulkanPhysicalDeviceCreateInfo.PhysicalDevice;
                 VulkanInstance = vulkanPhysicalDeviceCreateInfo.VulkanInstance;
 
@@ -260,9 +265,21 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                     TransferQueueIndex = queueFamilyParams.TransferIndex;
                 }
 
+                AvailableSurfaceCapabilities = PhysicalDevice.GetSurfaceCapabilitiesKHR(VulkanInstance.VulkanSurface.Surface);
+
+                var availableSurfaceFormats = PhysicalDevice.GetSurfaceFormatsKHR(VulkanInstance.VulkanSurface.Surface);
+
+                AvailableSurfaceFormats = availableSurfaceFormats.ToList();
+
+                var availableSurfacePresentModes =
+                    PhysicalDevice.GetSurfacePresentModesKHR(VulkanInstance.VulkanSurface.Surface);
+
+                AvailableSurfacePresentModes = availableSurfacePresentModes.ToList();
+
                 _isInit = true;
             }
         }
+        
 
         public ExtensionProperties GetExtensionPropertiesByName(String extensionName)
         {
