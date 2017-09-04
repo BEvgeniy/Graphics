@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Printing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Logical;
@@ -12,6 +13,7 @@ using Graphics.Engine.VulkanDriver.VkInstance;
 using Graphics.Engine.VulkanDriver.VkShader;
 using Graphics.Engine.VulkanDriver.VkSurface;
 using Graphics.Engine.VulkanDriver.VkSwapchain;
+using OpenTK;
 using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver
@@ -123,7 +125,47 @@ namespace Graphics.Engine.VulkanDriver
                 WriteCommandBuffers();
                 // Создадим объекты синхронизации видеокарты и хоста 
                 СreateSemaphores();
+                
             }
+        }
+
+        public void DrawFrame()
+        {
+            WaitIdle();
+
+            var imageIndex = VulkanLogicalDevice.Device.AcquireNextImageKHR(VulkanSwapchain.Swapchain, UInt64.MaxValue,
+                ImageAvailableSemaphore);
+            
+            var submitInfo = new SubmitInfo();
+
+            Semaphore[] waitSemaphores = {ImageAvailableSemaphore};
+            PipelineStageFlags[] waitStages = {PipelineStageFlags.ColorAttachmentOutput};
+            submitInfo.WaitSemaphoreCount = 1;
+            submitInfo.WaitSemaphores = waitSemaphores;
+            submitInfo.WaitDstStageMask = waitStages;
+
+            submitInfo.CommandBufferCount = 1;
+            submitInfo.CommandBuffers = new[] {CommandBuffers.ElementAt((Int32) imageIndex)};
+
+            Semaphore[] signalSemaphores = {RenderFinishedSemaphore};
+            submitInfo.SignalSemaphoreCount = 1;
+            submitInfo.SignalSemaphores = signalSemaphores;
+
+            VulkanLogicalDevice.GraphicsQueue.Submit(submitInfo);
+
+            var presentInfo = new PresentInfoKhr
+            {
+                WaitSemaphoreCount = 1,
+                WaitSemaphores = signalSemaphores
+            };
+
+            SwapchainKhr[] swapChains = {VulkanSwapchain.Swapchain};
+            presentInfo.SwapchainCount = 1;
+            presentInfo.Swapchains = swapChains;
+
+            presentInfo.ImageIndices = new[] {imageIndex};
+
+            VulkanLogicalDevice.GraphicsQueue.PresentKHR(presentInfo);
         }
 
         private void СreateSemaphores()
@@ -140,14 +182,14 @@ namespace Graphics.Engine.VulkanDriver
                 var beginInfo = new CommandBufferBeginInfo
                 {
                     Flags = CommandBufferUsageFlags.SimultaneousUse,
-                    InheritanceInfo = null // Optional
+                    //InheritanceInfo = null // Optional
                 };
                 
                 CommandBuffers[i].Begin(beginInfo);
 
                 var clearColor = new ClearValue
                 {
-                    Color = new ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f)
+                    Color = new ClearColorValue(0.2f, 0.2f, 0.2f, 1.0f)
                 };
 
                 var renderPassInfo = new RenderPassBeginInfo
@@ -239,12 +281,22 @@ namespace Graphics.Engine.VulkanDriver
                 PipelineBindPoint = PipelineBindPoint.Graphics,
                 ColorAttachmentCount = 1,
                 ColorAttachments = new[] {colorAttachmentRef},
-                InputAttachmentCount = 0,
-                InputAttachments = null,
-                PreserveAttachmentCount = 0,
-                PreserveAttachments = null,
+                //InputAttachmentCount = 0,
+                //InputAttachments = null,
+                //PreserveAttachmentCount = 0,
+                //PreserveAttachments = null,
                 //DepthStencilAttachment = null,
-                ResolveAttachments = null
+                //ResolveAttachments = null
+            };
+
+            var dependency = new SubpassDependency
+            {
+                SrcSubpass = 0,
+                DstSubpass = 0,
+                SrcStageMask = PipelineStageFlags.ColorAttachmentOutput,
+                SrcAccessMask = 0,
+                DstStageMask = PipelineStageFlags.ColorAttachmentOutput,
+                DstAccessMask = AccessFlags.ColorAttachmentRead | AccessFlags.ColorAttachmentWrite
             };
 
             var renderPassInfo = new RenderPassCreateInfo
@@ -252,7 +304,9 @@ namespace Graphics.Engine.VulkanDriver
                 AttachmentCount = 1,
                 Attachments = new[] {colorAttachment},
                 SubpassCount = 1,
-                Subpasses = new[] {subPass}
+                Subpasses = new[] {subPass},
+                DependencyCount = 1,
+                Dependencies = new[] {dependency}
             };
 
             RenderPass = VulkanLogicalDevice.Device.CreateRenderPass(renderPassInfo);
@@ -301,14 +355,14 @@ namespace Graphics.Engine.VulkanDriver
                 pipelineInfo.ViewportState = viewportState;
                 pipelineInfo.RasterizationState = rasterizer;
                 pipelineInfo.MultisampleState = multisampling;
-                pipelineInfo.DepthStencilState = depthStencil; // Optional
+                //pipelineInfo.DepthStencilState = depthStencil; // Optional
                 pipelineInfo.ColorBlendState = colorBlending;
-                pipelineInfo.DynamicState = dynamicState;// Optional
+                //pipelineInfo.DynamicState = dynamicState;// Optional
                 pipelineInfo.Layout = pipelineLayout;
                 pipelineInfo.RenderPass = RenderPass;
                 pipelineInfo.Subpass = 0;
-                pipelineInfo.BasePipelineHandle = new Pipeline();
-                pipelineInfo.BasePipelineIndex = -1; // Optional
+                //pipelineInfo.BasePipelineHandle = new Pipeline();
+                //pipelineInfo.BasePipelineIndex = -1; // Optional
             };
 
            Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(new PipelineCache(), 1, pipelineInfo)[0];
@@ -393,10 +447,10 @@ namespace Graphics.Engine.VulkanDriver
                 LineWidth = 1.0f,
                 CullMode = CullModeFlags.Back,
                 FrontFace = FrontFace.Clockwise,
-                DepthBiasEnable = false,
-                DepthBiasConstantFactor = 0.0f, // Optional
-                DepthBiasClamp = 0.0f, // Optional
-                DepthBiasSlopeFactor = 0.0f // Optional
+                //DepthBiasEnable = false,
+                //DepthBiasConstantFactor = 0.0f, // Optional
+                //DepthBiasClamp = 0.0f, // Optional
+                //DepthBiasSlopeFactor = 0.0f // Optional
             };
             return rasterizer;
         }
@@ -407,10 +461,10 @@ namespace Graphics.Engine.VulkanDriver
             {
                 SampleShadingEnable = false,
                 RasterizationSamples = SampleCountFlags.Count1,
-                MinSampleShading = 1.0f,// Optional
-                SampleMask = null,// Optional
-                AlphaToCoverageEnable = false,// Optional
-                AlphaToOneEnable = false// Optional
+                //MinSampleShading = 1.0f,// Optional
+                //SampleMask = null,// Optional
+                //AlphaToCoverageEnable = false,// Optional
+                //AlphaToOneEnable = false// Optional
             };
             return multisampling;
         }
@@ -496,9 +550,9 @@ namespace Graphics.Engine.VulkanDriver
                 DynamicStateCount = (UInt32) dynamicStates.Length,
                 DynamicStates = dynamicStates
             };
-            return new PipelineDynamicStateCreateInfo();
+            //return new PipelineDynamicStateCreateInfo();
             // TODO: при необходимости разблокировать - сверху удалить
-            //return dynamicState;
+            return dynamicState;
         }
 
         private PipelineLayoutCreateInfo CreatePipelineLayoutState()
@@ -600,5 +654,9 @@ namespace Graphics.Engine.VulkanDriver
 
         #endregion
 
+        public void WaitIdle()
+        {
+           VulkanLogicalDevice.Device.WaitIdle();
+        }
     }
 }

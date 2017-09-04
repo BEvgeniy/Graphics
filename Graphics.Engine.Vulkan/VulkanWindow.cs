@@ -9,12 +9,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using OpenTK;
 
 namespace Graphics.Engine
 {
     // https://blogs.msdn.microsoft.com/rickhos/2005/03/30/the-ideal-system-windows-forms-3d-gameloop-take-15/
     // https://gamedev.stackexchange.com/questions/67651/what-is-the-standard-c-windows-forms-game-loop
-    public partial class VulkanWindow : Form, INativeWindow
+    public partial class VulkanWindow : Form
     {
         private readonly Action _actionFrame;
         public VulkanWindow(Action actionFrame)
@@ -22,9 +23,6 @@ namespace Graphics.Engine
             _actionFrame = actionFrame;
             InitializeComponent();
         }
-
-        public IntPtr WindowHandle => Handle;
-        public IntPtr ProcessHandle => Process.GetCurrentProcess().Handle;
 
         [DllImport("user32.dll")]
         public static extern Int32 SendNotifyMessage(IntPtr hWnd, Int32 msg, IntPtr wParam, IntPtr lParam);

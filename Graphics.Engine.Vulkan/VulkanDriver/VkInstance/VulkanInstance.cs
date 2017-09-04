@@ -4,6 +4,7 @@ using System.Linq;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkSurface;
+using OpenTK;
 using VulkanSharp;
 
 namespace Graphics.Engine.VulkanDriver.VkInstance
