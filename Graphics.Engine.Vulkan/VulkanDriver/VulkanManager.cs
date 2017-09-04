@@ -1,9 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Printing;
+using System.IO;
+using System.Reflection;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Logical;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkInstance;
+using Graphics.Engine.VulkanDriver.VkShader;
 using Graphics.Engine.VulkanDriver.VkSurface;
 using Graphics.Engine.VulkanDriver.VkSwapchain;
 using VulkanSharp;
@@ -64,6 +70,23 @@ namespace Graphics.Engine.VulkanDriver
         /// </summary>
         public VulkanSwapchain VulkanSwapchain { get; private set; }
 
+        /// <summary>
+        /// Шейдер (вершинный + пиксельный)
+        /// </summary>
+        public VulkanShader VulkanShader { get; private set; }
+
+        public RenderPass RenderPass { get; private set; }
+
+        public Pipeline Pipeline { get; private set; }
+
+        public IReadOnlyList<Framebuffer> Framebuffers { get; private set; }
+
+        public IReadOnlyList<CommandBuffer> CommandBuffers { get; private set; }
+
+        public Semaphore ImageAvailableSemaphore { get; private set; }
+
+        public Semaphore RenderFinishedSemaphore { get; private set; }
+
         #endregion
 
         public VulkanManager()
@@ -86,8 +109,409 @@ namespace Graphics.Engine.VulkanDriver
                 CreateLogicalDevice();
                 // Создадим цепочку переключений
                 CreateSwapchain();
-
+                // Создадим шейдеры
+                CreateShaders();
+                // Создадим проход рендеринга
+                CreateRenderPass();
+                // Создадим конвеер
+                CreatePipeline();
+                // Создадим буферы для фреймов (сколько было создано в цепочке переключений, столько будет и буферов)
+                CreateFramebuffers();
+                // Создадим командные буферы
+                CreateCommandBuffers();
+                // Запишем команды в командные буферы
+                WriteCommandBuffers();
+                // Создадим объекты синхронизации видеокарты и хоста 
+                СreateSemaphores();
             }
+        }
+
+        private void СreateSemaphores()
+        {
+            var semaphoreInfo = new SemaphoreCreateInfo();
+            ImageAvailableSemaphore = VulkanLogicalDevice.Device.CreateSemaphore(semaphoreInfo);
+            RenderFinishedSemaphore = VulkanLogicalDevice.Device.CreateSemaphore(semaphoreInfo);
+        }
+
+        private void WriteCommandBuffers()
+        {
+            for (var i = 0; i < CommandBuffers.Count; i++)
+            {
+                var beginInfo = new CommandBufferBeginInfo
+                {
+                    Flags = CommandBufferUsageFlags.SimultaneousUse,
+                    InheritanceInfo = null // Optional
+                };
+                
+                CommandBuffers[i].Begin(beginInfo);
+
+                var clearColor = new ClearValue
+                {
+                    Color = new ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f)
+                };
+
+                var renderPassInfo = new RenderPassBeginInfo
+                {
+                    RenderPass = RenderPass,
+                    ClearValueCount = 1,
+                    ClearValues = new[] {clearColor},
+                    Framebuffer = Framebuffers[i],
+                    RenderArea = new Rect2D
+                    {
+                        Offset = new Offset2D(),
+                        Extent = VulkanSwapchain.SurfaceExtent2D
+                    }
+                };
+                
+                CommandBuffers[i].CmdBeginRenderPass(renderPassInfo, SubpassContents.Inline);
+                CommandBuffers[i].CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
+                CommandBuffers[i].CmdDraw(3, 1, 0, 0);
+                CommandBuffers[i].CmdEndRenderPass();
+
+                CommandBuffers[i].End();
+            }
+        }
+
+        private void CreateCommandBuffers()
+        {
+            var allocateInfo = new CommandBufferAllocateInfo
+            {
+                CommandPool = VulkanLogicalDevice.GraphicsCommandPool,
+                Level = CommandBufferLevel.Primary,
+                CommandBufferCount = (UInt32) VulkanSwapchain.SwapchainImageViews.Count
+            };
+
+            CommandBuffers = VulkanLogicalDevice.Device.AllocateCommandBuffers(allocateInfo);
+        }
+
+        private void CreateFramebuffers()
+        {
+            var framebuffers = new List<Framebuffer>();
+
+            for (var i = 0; i < VulkanSwapchain.SwapchainImageViews.Count; i++)
+            {
+                ImageView[] attachments =
+                {
+                    VulkanSwapchain.SwapchainImageViews[i]
+                };
+
+                var framebufferCreateInfo = new FramebufferCreateInfo
+                {
+                    RenderPass = RenderPass,
+                    AttachmentCount = 1,
+                    Attachments = attachments,
+                    Width = VulkanSwapchain.SurfaceExtent2D.Width,
+                    Height = VulkanSwapchain.SurfaceExtent2D.Height,
+                    Layers = 1
+                };
+
+                var framebuffer = VulkanLogicalDevice.Device.CreateFramebuffer(framebufferCreateInfo);
+
+                framebuffers.Add(framebuffer);
+            }
+
+            Framebuffers = framebuffers;
+        }
+
+        private void CreateRenderPass()
+        {
+            // Описываем вложение цвета (для цепочки рендеринга)
+            var colorAttachment = new AttachmentDescription
+            {
+                Format = VulkanSwapchain.SurfaceFormat.Format,
+                Samples = SampleCountFlags.Count1,
+                LoadOp = AttachmentLoadOp.Clear,
+                StoreOp = AttachmentStoreOp.Store,
+                StencilLoadOp = AttachmentLoadOp.DontCare,
+                StencilStoreOp = AttachmentStoreOp.DontCare,
+                InitialLayout = ImageLayout.Undefined,
+                FinalLayout = ImageLayout.PresentSrcKhr
+            };
+            // layout(location = 0) out vec4 outColor (в fragment shader)
+            var colorAttachmentRef = new AttachmentReference
+            {
+                Attachment = 0,
+                Layout = ImageLayout.ColorAttachmentOptimal
+            };
+
+            var subPass = new SubpassDescription
+            {
+                PipelineBindPoint = PipelineBindPoint.Graphics,
+                ColorAttachmentCount = 1,
+                ColorAttachments = new[] {colorAttachmentRef},
+                InputAttachmentCount = 0,
+                InputAttachments = null,
+                PreserveAttachmentCount = 0,
+                PreserveAttachments = null,
+                //DepthStencilAttachment = null,
+                ResolveAttachments = null
+            };
+
+            var renderPassInfo = new RenderPassCreateInfo
+            {
+                AttachmentCount = 1,
+                Attachments = new[] {colorAttachment},
+                SubpassCount = 1,
+                Subpasses = new[] {subPass}
+            };
+
+            RenderPass = VulkanLogicalDevice.Device.CreateRenderPass(renderPassInfo);
+        }
+
+        private void CreateShaders()
+        {
+            var vulkanShaderCreateInfo = new VulkanShaderCreateInfo
+            {
+                VulkanLogicalDevice = VulkanLogicalDevice,
+                VertexFileName = "VS_Color.vert",
+                FragmentFileName = "PS_Color.frag"
+            };
+            var vulkanShader = new VulkanShader();
+            vulkanShader.Create(vulkanShaderCreateInfo);
+            VulkanShader = vulkanShader;
+        }
+
+        private void CreatePipeline()
+        {
+            // Fixes pipeline stages settings
+            var vertexInputState = CreatePipelineVertexInputState();
+            var inputAssemblyState = CreatePipelineInputAssemblyState();
+            var viewportState = CreatePipelineViewportState();
+            var rasterizer = CreatePipelineRasterizationState();
+            var multisampling = CreatePipelineMultisampleState();
+            var depthStencil = CreatePipelineDepthStencilState();
+            var colorBlending = CreatePipelineColorBlendState();
+            var dynamicState = CreatePipelineDynamicState();
+            var pipelineLayoutState = CreatePipelineLayoutState();
+
+            var pipelineLayout = VulkanLogicalDevice.Device.CreatePipelineLayout(pipelineLayoutState);
+
+            var vertexShaderStage = CreatePipelineShaderStage(ShaderStageFlags.Vertex, VulkanShader.VertexModule);
+            var fragmentShaderStage = CreatePipelineShaderStage(ShaderStageFlags.Fragment, VulkanShader.FragmentModule);
+
+            // Имея все - теперь можно создать сам графический конвеер
+
+            var pipelineInfo = new GraphicsPipelineCreateInfo();
+            {
+                pipelineInfo.StageCount = 2;
+                // Количество шейдерных программ - 2 (vertex shader & fragment shader)
+                pipelineInfo.Stages = new[] {vertexShaderStage, fragmentShaderStage};
+                pipelineInfo.VertexInputState = vertexInputState;
+                pipelineInfo.InputAssemblyState = inputAssemblyState;
+                pipelineInfo.ViewportState = viewportState;
+                pipelineInfo.RasterizationState = rasterizer;
+                pipelineInfo.MultisampleState = multisampling;
+                pipelineInfo.DepthStencilState = depthStencil; // Optional
+                pipelineInfo.ColorBlendState = colorBlending;
+                pipelineInfo.DynamicState = dynamicState;// Optional
+                pipelineInfo.Layout = pipelineLayout;
+                pipelineInfo.RenderPass = RenderPass;
+                pipelineInfo.Subpass = 0;
+                pipelineInfo.BasePipelineHandle = new Pipeline();
+                pipelineInfo.BasePipelineIndex = -1; // Optional
+            };
+
+           Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(new PipelineCache(), 1, pipelineInfo)[0];
+        }
+
+        private PipelineInputAssemblyStateCreateInfo CreatePipelineInputAssemblyState()
+        {
+            var inputAssemblyState = new PipelineInputAssemblyStateCreateInfo
+            {
+                Topology = PrimitiveTopology.TriangleList,
+                PrimitiveRestartEnable = false
+            };
+            return inputAssemblyState;
+        }
+
+        private PipelineVertexInputStateCreateInfo CreatePipelineVertexInputState()
+        {
+            var vertexInputState = new PipelineVertexInputStateCreateInfo
+            {
+                VertexBindingDescriptionCount = 0,
+                VertexBindingDescriptions = null, // Optional
+                VertexAttributeDescriptionCount = 0,
+                VertexAttributeDescriptions = null // Optional
+            };
+            return vertexInputState;
+        }
+
+        private PipelineShaderStageCreateInfo CreatePipelineShaderStage(ShaderStageFlags shaderType, ShaderModule module)
+        {
+            var createInfo = new PipelineShaderStageCreateInfo
+            {
+                Stage = shaderType,
+                Module = module,
+                // Имя точки входа в программу шейдера (функция с которой начинается выполнение программы)
+                Name = "main"
+            };
+            return createInfo;
+        }
+
+        private PipelineViewportStateCreateInfo CreatePipelineViewportState()
+        {
+            // Область просмотра изображения в окне
+            var viewport = new Viewport
+            {
+                X = 0.0f,
+                Y = 0.0f,
+                Width = VulkanSwapchain.SurfaceExtent2D.Width,
+                Height = VulkanSwapchain.SurfaceExtent2D.Height,
+                MinDepth = 0.0f,
+                MaxDepth = 1.0f,
+            };
+            var scissor = new Rect2D
+            {
+                Offset = new Offset2D
+                {
+                    X = 0,
+                    Y = 0,
+                },
+                Extent = new Extent2D
+                {
+                    Width = VulkanSwapchain.SurfaceExtent2D.Width,
+                    Height = VulkanSwapchain.SurfaceExtent2D.Height
+                }
+            };
+            var viewportState = new PipelineViewportStateCreateInfo
+            {
+                ViewportCount = 1,
+                Viewports = new[] {viewport},
+                ScissorCount = 1,
+                Scissors = new[] {scissor}
+            };
+            return viewportState;
+        }
+
+        private PipelineRasterizationStateCreateInfo CreatePipelineRasterizationState()
+        {
+            var rasterizer = new PipelineRasterizationStateCreateInfo
+            {
+                DepthClampEnable = false,
+                RasterizerDiscardEnable = false,
+                PolygonMode = PolygonMode.Fill,
+                LineWidth = 1.0f,
+                CullMode = CullModeFlags.Back,
+                FrontFace = FrontFace.Clockwise,
+                DepthBiasEnable = false,
+                DepthBiasConstantFactor = 0.0f, // Optional
+                DepthBiasClamp = 0.0f, // Optional
+                DepthBiasSlopeFactor = 0.0f // Optional
+            };
+            return rasterizer;
+        }
+
+        private PipelineMultisampleStateCreateInfo CreatePipelineMultisampleState()
+        {
+            var multisampling = new PipelineMultisampleStateCreateInfo
+            {
+                SampleShadingEnable = false,
+                RasterizationSamples = SampleCountFlags.Count1,
+                MinSampleShading = 1.0f,// Optional
+                SampleMask = null,// Optional
+                AlphaToCoverageEnable = false,// Optional
+                AlphaToOneEnable = false// Optional
+            };
+            return multisampling;
+        }
+
+        private PipelineDepthStencilStateCreateInfo CreatePipelineDepthStencilState()
+        {
+            var depthStencil = new PipelineDepthStencilStateCreateInfo
+            {
+                DepthTestEnable = true,
+                DepthWriteEnable = true,
+                DepthCompareOp = CompareOp.Less,
+                DepthBoundsTestEnable = false,
+                MinDepthBounds = 0.0f, // Optional
+                MaxDepthBounds = 1.0f, // Optional
+                StencilTestEnable = false,
+                Front = new StencilOpState(), // Optional
+                Back = new StencilOpState() // Optional
+            };
+
+            return new PipelineDepthStencilStateCreateInfo();
+            // TODO: при отображении трехмерных моделей разблокировать - сверху удалить
+            // return depthStencil;
+        }
+
+        private PipelineColorBlendStateCreateInfo CreatePipelineColorBlendState()
+        {
+            // opaque
+            var colorBlendAttachment = new PipelineColorBlendAttachmentState
+            {
+                BlendEnable = false,
+                SrcColorBlendFactor = BlendFactor.One, // Optional
+                DstColorBlendFactor = BlendFactor.Zero, // Optional
+                ColorBlendOp = BlendOp.Add,
+                SrcAlphaBlendFactor = BlendFactor.One, // Optional
+                DstAlphaBlendFactor = BlendFactor.Zero, // Optional
+                AlphaBlendOp = BlendOp.Add,
+                ColorWriteMask = ColorComponentFlags.R | ColorComponentFlags.G |
+                                 ColorComponentFlags.B | ColorComponentFlags.A
+            };
+
+            // not opaque (transparent)
+            //var colorBlendAttachment = new PipelineColorBlendAttachmentState
+            //{
+            //    BlendEnable = true,
+            //    SrcColorBlendFactor = BlendFactor.SrcAlpha, // Optional
+            //    DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha, // Optional
+            //    ColorBlendOp = BlendOp.Add,
+            //    SrcAlphaBlendFactor = BlendFactor.One, // Optional
+            //    DstAlphaBlendFactor = BlendFactor.Zero, // Optional
+            //    AlphaBlendOp = BlendOp.Add,
+            //    ColorWriteMask = ColorComponentFlags.R | ColorComponentFlags.G |
+            //                     ColorComponentFlags.B | ColorComponentFlags.A
+            //};
+
+            var colorBlending = new PipelineColorBlendStateCreateInfo
+            {
+                LogicOpEnable = false,
+                LogicOp = LogicOp.Copy, // Optional
+                AttachmentCount = 1,
+                Attachments = new[] {colorBlendAttachment},
+                BlendConstants =
+                {
+                    [0] = 0.0f, // Optional
+                    [1] = 0.0f, // Optional
+                    [2] = 0.0f, // Optional
+                    [3] = 0.0f, // Optional
+                }
+            };
+
+            return colorBlending;
+        }
+
+        private PipelineDynamicStateCreateInfo CreatePipelineDynamicState()
+        {
+            DynamicState[] dynamicStates =
+            {
+                DynamicState.Viewport,
+                DynamicState.LineWidth,
+            };
+
+            var dynamicState = new PipelineDynamicStateCreateInfo
+            {
+                DynamicStateCount = (UInt32) dynamicStates.Length,
+                DynamicStates = dynamicStates
+            };
+            return new PipelineDynamicStateCreateInfo();
+            // TODO: при необходимости разблокировать - сверху удалить
+            //return dynamicState;
+        }
+
+        private PipelineLayoutCreateInfo CreatePipelineLayoutState()
+        {
+            var layout = new PipelineLayoutCreateInfo
+            {
+                SetLayoutCount = 0, // Optional
+                SetLayouts = null, // Optional
+                PushConstantRangeCount = 0, // Optional
+                PushConstantRanges = null // Optional
+            };
+
+            return layout;
         }
 
         private void CreateSwapchain()

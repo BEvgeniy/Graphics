@@ -55,6 +55,21 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         public Queue TransferQueue { get; private set; }
 
         /// <summary>
+        /// Пул команд для семейства очередей поддерживающих работу с графическими командами (по умолчанию)
+        /// </summary>
+        public CommandPool GraphicsCommandPool { get; private set; }
+
+        /// <summary>
+        /// Пул команд для семейства очередей поддерживающих работу с командами вычислений (по умолчанию)
+        /// </summary>
+        public CommandPool ComputeCommandPool { get; private set; }
+
+        /// <summary>
+        /// Пул команд для семейства очередей поддерживающих работу с командами работы с памятью (по умолчанию)
+        /// </summary>
+        public CommandPool TransferCommandPool { get; private set; }
+
+        /// <summary>
         /// Названия расширений, которые подключены к созданному логическому устройству.
         /// </summary>
         public IReadOnlyList<ExtensionProperties> VulkanEnabledLogicalDeviceExtensions { get; private set; }
@@ -193,25 +208,72 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
                 {
                     GraphicsQueue = Device.GetQueue((UInt32) VulkanPhysicalDevice.GraphicsQueueIndex, 0);
+                    GraphicsCommandPool = CreateCommandPool((UInt32) VulkanPhysicalDevice.GraphicsQueueIndex);
                 }
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateComputeQueue)
                 {
-                    ComputeQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.ComputeQueueIndex, 0);
+                    ComputeQueue = Device.GetQueue((UInt32) VulkanPhysicalDevice.ComputeQueueIndex, 0);
+                    if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
+                    {
+                        if (VulkanPhysicalDevice.GraphicsQueueIndex == VulkanPhysicalDevice.ComputeQueueIndex)
+                        {
+                            ComputeCommandPool = GraphicsCommandPool;
+                        }
+                    }
+                    if (ComputeCommandPool == null)
+                    {
+                        ComputeCommandPool = CreateCommandPool((UInt32) VulkanPhysicalDevice.ComputeQueueIndex);
+                    }
                 }
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateTransferQueue)
                 {
-                    TransferQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.TransferQueueIndex, 0);
+                    TransferQueue = Device.GetQueue((UInt32) VulkanPhysicalDevice.TransferQueueIndex, 0);
+
+                    if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
+                    {
+                        if (VulkanPhysicalDevice.GraphicsQueueIndex == VulkanPhysicalDevice.TransferQueueIndex)
+                        {
+                            TransferCommandPool = GraphicsCommandPool;
+                        }
+                    }
+                    if (TransferCommandPool == null)
+                    {
+                        if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateComputeQueue)
+                        {
+                            if (VulkanPhysicalDevice.ComputeQueueIndex == VulkanPhysicalDevice.TransferQueueIndex)
+                            {
+                                TransferCommandPool = ComputeCommandPool;
+                            }
+                        }
+                    }
+                    if (TransferCommandPool == null)
+                    {
+                        TransferCommandPool = CreateCommandPool((UInt32) VulkanPhysicalDevice.TransferQueueIndex);
+                    }
                 }
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreatePresentationQueue)
                 {
-                    TransferQueue = Device.GetQueue((UInt32)VulkanPhysicalDevice.PresentQueueIndex, 0);
+                    TransferQueue = Device.GetQueue((UInt32) VulkanPhysicalDevice.PresentQueueIndex, 0);
                 }
 
                 _isInit = true;
             }
         }
+
+        public CommandPool CreateCommandPool(UInt32 queueFamilyIndex,
+            CommandPoolCreateFlags createFlags = CommandPoolCreateFlags.ResetCommandBuffer)
+        {
+            var cmdPoolInfo = new CommandPoolCreateInfo
+            {
+                QueueFamilyIndex = queueFamilyIndex,
+                Flags = createFlags
+            };
+            var cmdPool = Device.CreateCommandPool(cmdPoolInfo);
+            return cmdPool;
+        }
+
     }
 }

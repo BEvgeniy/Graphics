@@ -76,12 +76,16 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\SettingsManager.cs" />
+    <Compile Include="VulkanDriver\VkShader\VulkanShader.cs" />
     <Compile Include="VulkanDriver\VkDevice\Logical\VulkanLogicalDeviceCreateInfo.cs" />
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceCreateInfo.cs" />
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceRate.cs" />
+    <Compile Include="VulkanDriver\VkPipeline\VulkanPipelineCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkShader\VulkanShaderCreateInfo.cs" />
     <Compile Include="VulkanDriver\VkSurface\VulkanSurfaceCreateInfo.cs" />
     <Compile Include="VulkanDriver\VkSwapchain\VulkanSwapchain.cs" />
     <Compile Include="VulkanDriver\VkSwapchain\VulkanSwapchainCreateInfo.cs" />
+    <Compile Include="VulkanDriver\VkPipeline\VulkanPipeline.cs" />
     <Compile Include="VulkanDriver\VulkanDebug.cs" />
     <Compile Include="VulkanDriver\VulkanDevice.cs" />
     <Compile Include="VulkanDriver\VkInstance\VulkanInstance.cs" />
@@ -103,7 +107,17 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Shaders\PS_Color.frag">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Shaders\VS_Color.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Shaders\glslangValidator.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
