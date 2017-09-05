@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver;
-using OpenGL.CSharp.Engine;
 using VulkanSharp;
 
 namespace Graphics.Engine
@@ -16,7 +15,7 @@ namespace Graphics.Engine
         private String[] _commandLineArguments;
         // https://blogs.msdn.microsoft.com/rickhos/2005/03/30/the-ideal-system-windows-forms-3d-gameloop-take-15/
         // https://gamedev.stackexchange.com/questions/67651/what-is-the-standard-c-windows-forms-game-loop
-        private GL4Window _vulkanMainWindow;
+        private VulkanWindow _vulkanMainWindow;
 
         private VulkanManager _vulkanManager;
 
@@ -36,7 +35,7 @@ namespace Graphics.Engine
             SettingsManager.LoadSettings();
             // Создаем экземпляр окна 
             _vulkanManager = new VulkanManager();
-            _vulkanMainWindow = new GL4Window(_vulkanManager);
+            _vulkanMainWindow = new VulkanWindow(_vulkanManager);
             // Теперь проинициализируем Vulkan
          
             _vulkanManager.Init(_vulkanMainWindow);

@@ -1,24 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using Graphics.Engine.VulkanDriver;
 using OpenTK;
-using OpenTK.Graphics.OpenGL4;
 
-namespace OpenGL.CSharp.Engine
+namespace Graphics.Engine
 {
-    internal class GL4Window : GameWindow, INativeWindow
+    internal class VulkanWindow : GameWindow, INativeWindow
     {
         private readonly VulkanManager _vulkanManager;
 
-        public GL4Window(VulkanManager vulkanManager, int width = 600, int height = 400)
+        public VulkanWindow(VulkanManager vulkanManager, int width = 600, int height = 400)
             : base(width, height,
                 OpenTK.Graphics.GraphicsMode.Default,
-                "Tutorial GL4 Window",
+                "Tutorial Vulkan Window",
                 GameWindowFlags.Default,
                 DisplayDevice.Default,
                 //Major Minor implicitly assigned to 4.0

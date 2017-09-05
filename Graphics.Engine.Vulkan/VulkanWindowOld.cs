@@ -15,10 +15,10 @@ namespace Graphics.Engine
 {
     // https://blogs.msdn.microsoft.com/rickhos/2005/03/30/the-ideal-system-windows-forms-3d-gameloop-take-15/
     // https://gamedev.stackexchange.com/questions/67651/what-is-the-standard-c-windows-forms-game-loop
-    public partial class VulkanWindow : Form
+    public partial class VulkanWindowOld : Form
     {
         private readonly Action _actionFrame;
-        public VulkanWindow(Action actionFrame)
+        public VulkanWindowOld(Action actionFrame)
         {
             _actionFrame = actionFrame;
             InitializeComponent();

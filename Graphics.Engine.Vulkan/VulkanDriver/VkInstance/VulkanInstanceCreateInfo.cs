@@ -75,6 +75,6 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
         /// <summary>
         /// Окно на которое будет выводиться изображение пользователю
         /// </summary>
-        public INativeWindow VulkanWindow { get; set; }
+        public VulkanWindow VulkanWindow { get; set; }
     }
 }

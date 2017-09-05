@@ -74,7 +74,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GL4Window.cs" />
     <Compile Include="GraphicsEngine.cs" />
     <Compile Include="INativeWindow.cs" />
     <Compile Include="Program.cs" />
@@ -101,12 +100,6 @@
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceSearchInfo.cs" />
     <Compile Include="VulkanDriver\VkSurface\VulkanSurface.cs" />
     <Compile Include="VulkanDriver\VulkanTools.cs" />
-    <Compile Include="VulkanWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="VulkanWindow.Designer.cs">
-      <DependentUpon>VulkanWindow.cs</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -123,11 +116,6 @@
     <Content Include="Shaders\glslangValidator.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="VulkanWindow.resx">
-      <DependentUpon>VulkanWindow.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

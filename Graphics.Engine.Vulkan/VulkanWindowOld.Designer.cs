@@ -1,6 +1,6 @@
 ﻿namespace Graphics.Engine
 {
-    partial class VulkanWindow
+    partial class VulkanWindowOld
     {
         /// <summary>
         /// Required designer variable.

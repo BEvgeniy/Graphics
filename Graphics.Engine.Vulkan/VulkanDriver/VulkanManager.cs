@@ -48,6 +48,8 @@ namespace Graphics.Engine.VulkanDriver
 
         #region .props
 
+        public VulkanWindow VulkanWindow { get; private set; }
+
         /// <summary>
         /// Экземпляр(объект или инстанс) Vulkan - хранит все состояния для текущего приложения
         /// Создается один раз при инициализации. 
@@ -96,15 +98,18 @@ namespace Graphics.Engine.VulkanDriver
             _isVulkanInit = false;
         }
 
-        public void Init(INativeWindow vulkanMainWindow)
+        public void Init(VulkanWindow vulkanMainWindow)
         {
             if (_isVulkanInit) return;
 
             lock (SyncObject)
             {
                 if (_isVulkanInit) return;
+
+                VulkanWindow = vulkanMainWindow;
+
                 // Создадим экземпляр Vulkan
-                CreateInstance(vulkanMainWindow);
+                CreateInstance(VulkanWindow);
                 // Выбираем наилучшее для нас устройство
                 CreatePhysicalDevice();
                 // Создадим логическое устройство связанное с видеоадаптером
@@ -583,7 +588,7 @@ namespace Graphics.Engine.VulkanDriver
 
         #region private sector
 
-        private void CreateInstance(INativeWindow vulkanMainWindow)
+        private void CreateInstance(VulkanWindow vulkanMainWindow)
         {
             VulkanInstance = new VulkanInstance();
 
@@ -641,13 +646,16 @@ namespace Graphics.Engine.VulkanDriver
             {
                 VulkanPhysicalDevice = VulkanPhysicalDevice,
                 VulkanSurface = VulkanInstance.VulkanSurface,
-                RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
+                RequestedFeatures = new PhysicalDeviceFeatures
+                {
+                    FillModeNonSolid = new Bool32(true) 
+                }, // пока все false
                 RequestedExtensionNames = SettingsManager.RequestedLogicalDeviceExtensionNames,
                 IsRequestedCreateGraphicsQueue = true,
                 IsRequestedCreateComputeQueue = true,
                 IsRequestedCreateTransferQueue = true
             };
-
+            
             VulkanLogicalDevice = new VulkanLogicalDevice();
             VulkanLogicalDevice.Create(createInfo);
         }
