@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using VulkanSharp;
+using Vulkan;
 namespace Graphics.Engine.VulkanDriver
 {
     internal class VulkanDevice

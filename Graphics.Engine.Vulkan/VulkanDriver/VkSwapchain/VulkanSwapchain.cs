@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Graphics.Engine.VulkanDriver.VkDevice.Logical;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkSurface;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkSwapchain
 {

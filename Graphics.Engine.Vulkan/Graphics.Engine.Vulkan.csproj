@@ -8,8 +8,9 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Graphics.Engine</RootNamespace>
     <AssemblyName>Graphics.Engine.Vulkan</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -66,11 +67,11 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="VulkanSharp, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\VulkanSharp.Windows.1.0.0.2\lib\net45\VulkanSharp.dll</HintPath>
+    <Reference Include="Vulkan, Version=0.0.6246.24664, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\VulkanSharp.0.1.8\lib\net452\Vulkan.dll</HintPath>
     </Reference>
-    <Reference Include="VulkanSharp.Windows, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\VulkanSharp.Windows.1.0.0.2\lib\net45\VulkanSharp.Windows.dll</HintPath>
+    <Reference Include="Vulkan.Windows, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\VulkanSharp.0.1.8\lib\net452\Vulkan.Windows.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +101,7 @@
     <Compile Include="VulkanDriver\VkDevice\Physical\VulkanPhysicalDeviceSearchInfo.cs" />
     <Compile Include="VulkanDriver\VkSurface\VulkanSurface.cs" />
     <Compile Include="VulkanDriver\VulkanTools.cs" />
+    <Compile Include="VulkanWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

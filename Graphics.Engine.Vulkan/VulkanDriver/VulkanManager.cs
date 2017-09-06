@@ -1,20 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing.Printing;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Logical;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkInstance;
 using Graphics.Engine.VulkanDriver.VkShader;
-using Graphics.Engine.VulkanDriver.VkSurface;
 using Graphics.Engine.VulkanDriver.VkSwapchain;
-using OpenTK;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver
 {
@@ -194,7 +187,7 @@ namespace Graphics.Engine.VulkanDriver
 
                 var clearColor = new ClearValue
                 {
-                    Color = new ClearColorValue(0.2f, 0.2f, 0.2f, 1.0f)
+                    Color = new ClearColorValue(new[] { 0.2f, 0.2f, 0.2f, 1.0f })
                 };
 
                 var renderPassInfo = new RenderPassBeginInfo
@@ -370,7 +363,7 @@ namespace Graphics.Engine.VulkanDriver
                 //pipelineInfo.BasePipelineIndex = -1; // Optional
             };
 
-           Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(new PipelineCache(), 1, pipelineInfo)[0];
+           Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(null, new []{ pipelineInfo })[0];
         }
 
         private PipelineInputAssemblyStateCreateInfo CreatePipelineInputAssemblyState()

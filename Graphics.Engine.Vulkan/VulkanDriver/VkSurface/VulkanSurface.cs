@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using Graphics.Engine.VulkanDriver.VkInstance;
 using OpenTK;
-using VulkanSharp;
-using VulkanSharp.Windows;
+using Vulkan;
+using Vulkan.Windows;
 
 namespace Graphics.Engine.VulkanDriver.VkSurface
 {
@@ -49,6 +49,7 @@ namespace Graphics.Engine.VulkanDriver.VkSurface
                 }
                 VulkanInstance = vulkanSurfaceCreateInfo.VulkanInstance;
                 VulkanWindow = vulkanSurfaceCreateInfo.VulkanWindow;
+                
                 var createInfo = new Win32SurfaceCreateInfoKhr
                 {
                     Hinstance = Process.GetCurrentProcess().Handle,

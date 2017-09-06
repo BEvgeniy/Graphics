@@ -1,5 +1,5 @@
 ﻿using System;
-using VulkanSharp;
+using Vulkan;
 using Version = System.Version;
 
 namespace Graphics.Engine.VulkanDriver
@@ -34,7 +34,7 @@ namespace Graphics.Engine.VulkanDriver
 
         public static UInt32 GetVulkanVersion(UInt32 major, UInt32 minor, UInt32 patch)
         {
-            return VulkanSharp.Version.Make(major, minor, patch);
+            return Vulkan.Version.Make(major, minor, patch);
         }
 
         public static Version GetDotNetVersion(UInt32 vulkanVersion)

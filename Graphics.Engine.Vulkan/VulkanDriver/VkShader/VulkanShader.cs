@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Logical;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkShader
 {

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver;
-using VulkanSharp;
 
 namespace Graphics.Engine
 {

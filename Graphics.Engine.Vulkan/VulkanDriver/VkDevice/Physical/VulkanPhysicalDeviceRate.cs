@@ -1,5 +1,5 @@
 ﻿using System;
-using VulkanSharp;
+using Vulkan;
 using Version = System.Version;
 
 namespace Graphics.Engine.VulkanDriver.VkDevice.Physical

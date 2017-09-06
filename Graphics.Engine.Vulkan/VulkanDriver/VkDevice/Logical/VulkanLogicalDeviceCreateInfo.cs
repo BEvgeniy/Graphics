@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkSurface;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 {

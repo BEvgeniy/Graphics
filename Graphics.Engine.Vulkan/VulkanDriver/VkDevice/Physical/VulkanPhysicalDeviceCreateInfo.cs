@@ -1,6 +1,6 @@
 ﻿using Graphics.Engine.VulkanDriver.VkInstance;
 using Graphics.Engine.VulkanDriver.VkSurface;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
 {

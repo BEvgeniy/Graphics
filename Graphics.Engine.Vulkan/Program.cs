@@ -1,5 +1,5 @@
 ﻿using System;
-using VulkanSharp;
+using Vulkan;
 
 namespace Graphics.Engine
 {

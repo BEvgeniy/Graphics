@@ -5,7 +5,8 @@ using Graphics.Engine.Settings;
 using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkSurface;
 using OpenTK;
-using VulkanSharp;
+using Vulkan;
+using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkInstance
 {
@@ -163,16 +164,16 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 var appInfo = new ApplicationInfo
                 {
                     ApiVersion =
-                        VulkanSharp.Version.Make((UInt32) vulkanInstanceCreateInfo.VulkanApiVersion.Major,
+                        Vulkan.Version.Make((UInt32) vulkanInstanceCreateInfo.VulkanApiVersion.Major,
                             (UInt32) vulkanInstanceCreateInfo.VulkanApiVersion.Minor,
                             (UInt32) vulkanInstanceCreateInfo.VulkanApiVersion.Build),
-                    ApplicationVersion = VulkanSharp.Version.Make(
+                    ApplicationVersion = Vulkan.Version.Make(
                         (UInt32) vulkanInstanceCreateInfo.ApplicationVersion.Major,
                         (UInt32) vulkanInstanceCreateInfo.ApplicationVersion.Minor,
                         (UInt32) vulkanInstanceCreateInfo.ApplicationVersion.Build),
                     ApplicationName = vulkanInstanceCreateInfo.ApplicationName,
                     EngineName = vulkanInstanceCreateInfo.EngineName,
-                    EngineVersion = VulkanSharp.Version.Make((UInt32) vulkanInstanceCreateInfo.EngineVersion.Major,
+                    EngineVersion = Vulkan.Version.Make((UInt32) vulkanInstanceCreateInfo.EngineVersion.Major,
                         (UInt32) vulkanInstanceCreateInfo.EngineVersion.Minor,
                         (UInt32) vulkanInstanceCreateInfo.EngineVersion.Build),
                 };
