@@ -12,6 +12,7 @@ namespace Graphics.Engine
     internal class GraphicsEngine
     {
         private String[] _commandLineArguments;
+
         // https://blogs.msdn.microsoft.com/rickhos/2005/03/30/the-ideal-system-windows-forms-3d-gameloop-take-15/
         // https://gamedev.stackexchange.com/questions/67651/what-is-the-standard-c-windows-forms-game-loop
         private VulkanWindow _vulkanMainWindow;
@@ -28,68 +29,56 @@ namespace Graphics.Engine
 
         private void Init()
         {
-            //var hInstance = System.Runtime.InteropServices.Marshal.GetHINSTANCE(typeof(App).Module);
             // Подгрузим настройки в наше приложение для использования. Этот шаг должен быть свегда первым.
-            // Т.к. менеджер типа VulkanManager, также как и другие менеджеры используют загруженные настройки из файлов конфигураций
+            // Т.к. менеджер типа VulkanManager, также как и другие менеджеры используют загруженные 
+            // настройки из файлов конфигураций
             SettingsManager.LoadSettings();
-            // Создаем экземпляр окна 
             _vulkanManager = new VulkanManager();
-            _vulkanMainWindow = new VulkanWindow(_vulkanManager);
-            // Теперь проинициализируем Vulkan
-         
+            _vulkanMainWindow = new VulkanWindow(Update, Render);
             _vulkanManager.Init(_vulkanMainWindow);
         }
 
         private void Load()
         {
-            
+
         }
 
         public void Run()
         {
             Init();
             Load();
-            _vulkanMainWindow.Run();
-             //Application.Run(_vulkanMainWindow);
+            _vulkanMainWindow.VSync = OpenTK.VSyncMode.Off;
+            _vulkanMainWindow.Run(0, 0);
             _vulkanManager.WaitIdle();
-            //_vulkanMainWindow.Hide();
             UnLoad();
             DeInit();
         }
-        
-        private void OnFrame()
+
+        public void Render()
+        {
+            _vulkanManager.DrawFrame();
+        }
+
+        public void Update()
         {
             if ((DateTime.Now - _dt).TotalSeconds < 1)
             {
-                Update();
-                Render();
                 _fps++;
-                _vulkanManager.DrawFrame();
             }
             else
             {
-                 _vulkanMainWindow.Title = _fps.ToString();
-                    _fps = 0;
-                  _dt = DateTime.Now;
-            }   
+                _vulkanMainWindow.Title = _fps.ToString();
+                _fps = 0;
+                _dt = DateTime.Now;
+            }
         }
 
-        private void Render()
-        {
-           
-        }
-
-        private void Update()
-        {
-            
-        }
-
-        private void UnLoad()
+        public void UnLoad()
         {
 
         }
 
-        private void DeInit()
+        public void DeInit()
         {
 
         }
