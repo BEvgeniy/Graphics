@@ -1,14 +1,22 @@
 ﻿using System;
-using Graphics.Engine.VulkanDriver;
 using OpenTK;
 
 namespace Graphics.Engine
 {
+    /// <summary>
+    /// Данное окно является частью библиотеки OpenTk - работает с OpenGL,
+    /// но, так как окно является очень удобным для использования с Vulkan
+    /// и не требует специальных усилий по внедрению кода и работы с ним,
+    /// решено использовать иммено его. 
+    /// При создании окна, также создается контекст OpenGL,
+    /// но на это мы подействовать не можем поэтому просто игнорируем этот факт.
+    /// </summary>
     internal class VulkanWindow : GameWindow, INativeWindow
     {
-        private readonly VulkanManager _vulkanManager;
+        private readonly Action _onUpdate;
+        private readonly Action _onRender;
 
-        public VulkanWindow(VulkanManager vulkanManager, int width = 600, int height = 400)
+        public VulkanWindow(Action onUpdate, Action onRender, Int32 width = 600, Int32 height = 400)
             : base(width, height,
                 OpenTK.Graphics.GraphicsMode.Default,
                 "Tutorial Vulkan Window",
@@ -18,60 +26,28 @@ namespace Graphics.Engine
                 //It's best to set to your version of GL
                 //so look at the method below for help.
                 //**do not set to a version above your own
-                4, 5,
-                //Make sure that we are only using 4.0 related stuff.
-                OpenTK.Graphics.GraphicsContextFlags.Debug |
-                OpenTK.Graphics.GraphicsContextFlags.ForwardCompatible)
+                3, 1,
+                OpenTK.Graphics.GraphicsContextFlags.Default)
         {
-            _vulkanManager = vulkanManager;
-            VSync = VSyncMode.Off;
-            
-            #region GL_VERSION
-
-            //this will return your version of opengl
-            //int major, minor;
-            //GL.GetInteger(GetPName.MajorVersion, out major);
-            //GL.GetInteger(GetPName.MinorVersion, out minor);
-            //Console.WriteLine("Major {0}\nMinor {1}", major, minor);
-            //you can also get your GLSL version, although not sure if it varies from the above
-            //Console.WriteLine("GLSL {0}", GL.GetString(StringName.ShadingLanguageVersion));
-            //Console.WriteLine("Vendor {0}", GL.GetString(StringName.Vendor));
-            //Console.WriteLine("Version {0}", GL.GetString(StringName.Version));
-            //Console.WriteLine("Renderer {0}", GL.GetString(StringName.Renderer));
-            //Console.WriteLine("Extensions {0}", GL.GetString(StringName.Extensions));
-
-            #endregion
+            _onUpdate = onUpdate;
+            _onRender = onRender;
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
-
+            _onUpdate?.Invoke();
         }
-        private DateTime _dt = DateTime.Now;
-        private Int64 _fps = 0;
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
-            if ((DateTime.Now - _dt).TotalSeconds < 1)
-            {
-                _fps++;
-                _vulkanManager.DrawFrame();
-            }
-            else
-            {
-                Title = _fps.ToString();
-                _fps = 0;
-                _dt = DateTime.Now;
-            }
-
+            _onRender?.Invoke();
         }
     }
 }
