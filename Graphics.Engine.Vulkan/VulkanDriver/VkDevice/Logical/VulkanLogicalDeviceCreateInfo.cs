@@ -33,6 +33,9 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         /// </summary>
         public IEnumerable<String> RequestedExtensionNames { get; set; }
 
+        /// <summary>
+        /// Установлен, в случае, необходимо создать очередь поддерживающую работу по выводу на экран монитора
+        /// </summary>
         public Boolean IsRequestedCreatePresentationQueue { get; set; }
 
         /// <summary>

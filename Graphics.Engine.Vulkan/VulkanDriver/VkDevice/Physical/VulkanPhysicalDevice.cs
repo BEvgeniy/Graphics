@@ -11,17 +11,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
     /// </summary>
     internal sealed class VulkanPhysicalDevice
     {
-        private Boolean _isInit;
-
-        public VulkanPhysicalDevice()
-        {
-            PhysicalDeviceSupportedExtensions = new List<ExtensionProperties>();
-            PhysicalDeviceQueueFamilyProperties = new List<QueueFamilyProperties>();
-            PresentQueueIndex = -1;
-            ComputeQueueIndex = -1;
-            GraphicsQueueIndex = -1;
-            TransferQueueIndex = -1;
-        }
+        #region .props
 
         /// <summary>
         /// Экземпляр(объект или инстанс) Vulkan - хранит все состояния для текущего приложения
@@ -31,7 +21,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
 
         /// <summary>
         /// Выбранный видеоадаптер. 
-        /// Видеоадаптер который был выбран системой автоматически (рекомендуется), либо указанный в настройках.
+        /// Видеоадаптер, который был выбран системой автоматически (рекомендуется), либо указанный в настройках.
         /// Видеоадаптер может быть задан явно, через указание в настройках, в случае, когда в системе имеется несколько видеоадаптеров и ведется разработка, 
         /// либо по какой-то причине выбранный системой видаоадаптер не устраивает или не отрабатывает как от него ожидают.
         /// </summary>
@@ -43,31 +33,6 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
         public PhysicalDeviceType PhysicalDeviceType { get; private set; }
 
         /// <summary>
-        /// Свойства видеоадаптера, такие как: версия драйвера, производитель, ограничения физического устройства (напр.: максимальный размер текструры)
-        /// </summary>
-        public PhysicalDeviceProperties PhysicalDeviceProperties { get; private set; }
-
-        /// <summary>
-        /// Возможности видеоадаптера такие как: поддержка геометрическо шейдера или шейдера тессиляции
-        /// </summary>
-        public PhysicalDeviceFeatures PhysicalDeviceFeatures { get; private set; }
-
-        /// <summary>
-        /// Свойства памяти видеоадаптера, используются регулярно, для создания всех видов буферов
-        /// </summary>
-        public PhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties { get; private set; }
-
-        /// <summary>
-        /// Список названий расширений, которые поддерживает видеоадаптер
-        /// </summary>
-        public IReadOnlyList<ExtensionProperties> PhysicalDeviceSupportedExtensions { get; private set; }
-
-        /// <summary>
-        /// Свойства семейств очередей видеоадаптера
-        /// </summary>
-        public IReadOnlyList<QueueFamilyProperties> PhysicalDeviceQueueFamilyProperties { get; private set; }
-
-        /// <summary>
         /// Если физическое устройство поддерживает работу с графическими командами, 
         /// то данное свойство содержит индекс указывающий на это семейство очередей
         /// </summary>
@@ -76,7 +41,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
         /// <summary>
         /// Если физическое устройство поддерживает работу с представлением (поддерживает вывод графики на экран), 
         /// то данное свойство содержит индекс указывающий на это семейство очередей
-        /// Желательно (избежать необходимости синхронизировать доступ к ресурсам), 
+        /// Желательно (дабы избежать необходимости синхронизировать доступ к ресурсам), 
         /// чтобы индекс очереди был равен индексу <see cref="GraphicsQueueIndex"/>
         /// </summary>
         public Int32 PresentQueueIndex { get; private set; }
@@ -96,18 +61,204 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
         public Int32 TransferQueueIndex { get; private set; }
 
         /// <summary>
-        /// Свойства семейства очередей приведенные в человеческий вид
+        /// Если физическое устройство поддерживает работу с графическими командами, 
+        /// то данное свойство возвращает true
         /// </summary>
-        public IReadOnlyList<VulkanPhysicalDeviceQueueFamiliesParams> VulkanAvailablePhysicalDeviceQueueFamiliesParams
+        public Boolean IsGraphicsQueueSupported => GraphicsQueueIndex >= 0;
+
+        /// <summary>
+        /// Если физическое устройство поддерживает работу с представлением (поддерживает вывод графики на экран), 
+        /// то данное свойство возвращает true
+        /// </summary>
+        public Boolean IsPresentQueueSupported => PresentQueueIndex >= 0;
+
+        /// <summary>
+        /// Если физическое устройство поддерживает работу с командами вычисления, 
+        /// то данное свойство возвращает true
+        /// </summary>
+        public Boolean IsComputeQueueSupported => ComputeQueueIndex >= 0;
+
+        /// <summary>
+        /// Если физическое устройство поддерживает работу с командами передачи, 
+        /// то данное свойство возвращает true
+        /// </summary>
+        public Boolean IsTransferQueueSupported => TransferQueueIndex >= 0;
+
+        #endregion
+
+        #region .public.sector
+
+        #region .static
+
+        /// <summary>
+        /// Возвращает свойства расширения физического устройства по указанному имени или null
+        /// </summary>
+        public static ExtensionProperties GetExtensionPropertiesByName(IReadOnlyList<ExtensionProperties> extensions,
+            String extensionName)
         {
-            get;
-            private set;
+            return extensions.FirstOrDefault(e => e.ExtensionName == extensionName);
         }
 
-        public SurfaceCapabilitiesKhr AvailableSurfaceCapabilities { get; private set; }
-        public IReadOnlyList<SurfaceFormatKhr> AvailableSurfaceFormats { get; private set; }
-        public IReadOnlyList<PresentModeKhr> AvailableSurfacePresentModes { get; private set; }
+        #endregion
 
+        #region .instance
+
+        /// <summary>
+        /// Свойства видеоадаптера, такие как: версия драйвера, производитель, ограничения физического устройства (напр.: максимальный размер текструры)
+        /// </summary>
+        public PhysicalDeviceProperties GetPhysicalDeviceProperties()
+        {
+            return PhysicalDevice.GetProperties();
+        }
+
+        /// <summary>
+        /// Возможности видеоадаптера такие как: поддержка геометрическо шейдера или шейдера тессиляции
+        /// </summary>
+        public PhysicalDeviceFeatures GetPhysicalDeviceFeatures()
+        {
+            return PhysicalDevice.GetFeatures();
+        }
+
+        /// <summary>
+        /// Свойства памяти видеоадаптера, используются регулярно, для создания всех видов буферов
+        /// </summary>
+        public PhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties()
+        {
+            return PhysicalDevice.GetMemoryProperties();
+        }
+
+        /// <summary>
+        /// Список названий расширений, которые поддерживает видеоадаптер
+        /// </summary>
+        public IReadOnlyList<ExtensionProperties> GetPhysicalDeviceExtensions()
+        {
+            var availDeviceExtensions = new List<ExtensionProperties>();
+            var availableDeviceExtensions = PhysicalDevice.EnumerateDeviceExtensionProperties();
+            if (availableDeviceExtensions != null && availableDeviceExtensions.Length > 0)
+            {
+                availDeviceExtensions.AddRange(availableDeviceExtensions);
+            }
+            return availDeviceExtensions;
+        }
+
+        /// <summary>
+        /// Позволяет узнать поддерживает ли физическое устройство расширение по указанному имени
+        /// </summary>
+        public Boolean IsExtensionSupportedByDevice(String extensionName)
+        {
+            return GetExtensionPropertiesByName(GetPhysicalDeviceExtensions(), extensionName) != null;
+        }
+
+        /// <summary>
+        /// Свойства семейств очередей видеоадаптера
+        /// </summary>
+        public IReadOnlyList<QueueFamilyProperties> GetPhysicalDeviceQueueFamilyProperties()
+        {
+            var availDeviceQueueFamilyPropertiesItems = new List<QueueFamilyProperties>();
+            var availableDeviceQueueFamilyPropertiesItem = PhysicalDevice.GetQueueFamilyProperties();
+            if (availableDeviceQueueFamilyPropertiesItem != null && availableDeviceQueueFamilyPropertiesItem.Length > 0)
+            {
+                availDeviceQueueFamilyPropertiesItems.AddRange(availableDeviceQueueFamilyPropertiesItem);
+            }
+            return availDeviceQueueFamilyPropertiesItems;
+        }
+
+        /// <summary>
+        /// Свойства семейства очередей приведенные в человеческий вид
+        /// </summary>
+        public IReadOnlyList<VulkanPhysicalDeviceQueueFamiliesParams>
+            GetVulkanAvailablePhysicalDeviceQueueFamiliesParams()
+        {
+            var queueParams = new List<VulkanPhysicalDeviceQueueFamiliesParams>();
+            var queues = GetPhysicalDeviceQueueFamilyProperties();
+            for (var i = 0; i < queues.Count; i++)
+            {
+                var queueFamilyPropertiesItem = queues[i];
+
+                var queueFamiliesParams = new VulkanPhysicalDeviceQueueFamiliesParams
+                {
+                    PresentIndex = -1,
+                    ComputeIndex = -1,
+                    GraphicsIndex = -1,
+                    TransferIndex = -1,
+                    QueueMaxCount = queueFamilyPropertiesItem.QueueCount
+                };
+
+                if (PhysicalDevice.GetSurfaceSupportKHR((UInt32) i,
+                    VulkanInstance.VulkanSurface.Surface))
+                {
+                    queueFamiliesParams.IsSupportPresent = true;
+                    queueFamiliesParams.PresentIndex = i;
+                }
+
+                if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Compute) == QueueFlags.Compute)
+                {
+                    queueFamiliesParams.IsSupportCompute = true;
+                    queueFamiliesParams.ComputeIndex = i;
+                    if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Compute) == QueueFlags.Compute)
+                    {
+                        queueFamiliesParams.IsSupportSeparatedCompute = true;
+                        queueParams.Add(queueFamiliesParams);
+                        continue;
+                    }
+                }
+
+                if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Transfer) == QueueFlags.Transfer)
+                {
+                    queueFamiliesParams.IsSupportTransfer = true;
+                    queueFamiliesParams.TransferIndex = i;
+                    if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Transfer) == QueueFlags.Transfer)
+                    {
+                        queueFamiliesParams.IsSupportSeparatedTransfer = true;
+                        queueParams.Add(queueFamiliesParams);
+                        continue;
+                    }
+                }
+
+                if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Graphics) == QueueFlags.Graphics)
+                {
+                    queueFamiliesParams.IsSupportGraphics = true;
+                    queueFamiliesParams.GraphicsIndex = i;
+                    if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Graphics) == QueueFlags.Graphics)
+                    {
+                        queueFamiliesParams.IsSupportSeparatedGraphics = true;
+                        queueParams.Add(queueFamiliesParams);
+                    }
+                }
+
+                queueParams.Add(queueFamiliesParams);
+            }
+
+            return queueParams;
+        }
+
+        public SurfaceCapabilitiesKhr GetAvailableSurfaceCapabilities()
+        {
+            return PhysicalDevice.GetSurfaceCapabilitiesKHR(VulkanInstance.VulkanSurface.Surface);
+        }
+
+        public IReadOnlyList<SurfaceFormatKhr> GetAvailableSurfaceFormats()
+        {
+            var availSurfaceFormats = new List<SurfaceFormatKhr>();
+            var availSurfaceFormat = PhysicalDevice.GetSurfaceFormatsKHR(VulkanInstance.VulkanSurface.Surface);
+            if (availSurfaceFormat != null && availSurfaceFormat.Length > 0)
+            {
+                availSurfaceFormats.AddRange(availSurfaceFormat);
+            }
+            return availSurfaceFormats;
+        }
+
+        public IReadOnlyList<PresentModeKhr> GetAvailableSurfacePresentModes()
+        {
+            var availSurfacePresentModes = new List<PresentModeKhr>();
+            var availSurfacePresentMode =
+                PhysicalDevice.GetSurfacePresentModesKHR(VulkanInstance.VulkanSurface.Surface);
+            if (availSurfacePresentMode != null && availSurfacePresentMode.Length > 0)
+            {
+                availSurfacePresentModes.AddRange(availSurfacePresentMode);
+            }
+            return availSurfacePresentModes;
+        }
 
         public void Create(VulkanPhysicalDeviceCreateInfo vulkanPhysicalDeviceCreateInfo)
         {
@@ -122,83 +273,32 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 {
                     return;
                 }
-                
+
                 PhysicalDevice = vulkanPhysicalDeviceCreateInfo.PhysicalDevice;
+
+                if (PhysicalDevice == null)
+                {
+                    throw new ArgumentException("Необходимо задать физическое устройство PhysicalDevice",
+                        nameof(vulkanPhysicalDeviceCreateInfo));
+                }
+
                 VulkanInstance = vulkanPhysicalDeviceCreateInfo.VulkanInstance;
 
-                PhysicalDeviceProperties = PhysicalDevice.GetProperties();
-                PhysicalDeviceType = PhysicalDeviceProperties.DeviceType;
-                PhysicalDeviceFeatures = PhysicalDevice.GetFeatures();
-                PhysicalDeviceMemoryProperties = PhysicalDevice.GetMemoryProperties();
-
-                var extensions = PhysicalDevice.EnumerateDeviceExtensionProperties(null);
-                if (extensions != null && extensions.Length > 0)
+                if (VulkanInstance == null)
                 {
-                    PhysicalDeviceSupportedExtensions = extensions;
+                    throw new ArgumentException("Необходимо задать экземпляр объекта VulkanInstance",
+                        nameof(vulkanPhysicalDeviceCreateInfo));
                 }
 
-                var queues = PhysicalDevice.GetQueueFamilyProperties();
-                if (queues != null && queues.Length > 0)
-                {
-                    PhysicalDeviceQueueFamilyProperties = queues;
-                }
+                var physicalDeviceProperties = GetPhysicalDeviceProperties();
 
-                var queueParams = new List<VulkanPhysicalDeviceQueueFamiliesParams>();
+                PhysicalDeviceType = physicalDeviceProperties.DeviceType;
 
-                for (var i = 0; i < PhysicalDeviceQueueFamilyProperties.Count; i++)
-                {
-                    var queueFamilyPropertiesItem = PhysicalDeviceQueueFamilyProperties[i];
-                    var queueFamiliesParams = new VulkanPhysicalDeviceQueueFamiliesParams
-                    {
-                        PresentIndex = -1,
-                        ComputeIndex = -1,
-                        GraphicsIndex = -1,
-                        TransferIndex = -1,
-                        QueueMaxCount = queueFamilyPropertiesItem.QueueCount
-                    };
-                    if (PhysicalDevice.GetSurfaceSupportKHR((UInt32) i,
-                        vulkanPhysicalDeviceCreateInfo.VulkanSurface.Surface))
-                    {
-                        queueFamiliesParams.IsSupportPresent = true;
-                        queueFamiliesParams.PresentIndex = i;
-                    }
+                var physicalDeviceFeatures = GetPhysicalDeviceFeatures();
+                var physicalDeviceMemoryProperties = GetPhysicalDeviceMemoryProperties();
+                var physicalDeviceExtensions = GetPhysicalDeviceExtensions();
 
-                    if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Compute) == QueueFlags.Compute)
-                    {
-                        queueFamiliesParams.IsSupportCompute = true;
-                        queueFamiliesParams.ComputeIndex = i;
-                        if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Compute) == QueueFlags.Compute)
-                        {
-                            queueFamiliesParams.IsSupportSeparatedCompute = true;
-                            queueParams.Add(queueFamiliesParams);
-                            continue;
-                        }
-                    }
-                    if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Transfer) == QueueFlags.Transfer)
-                    {
-                        queueFamiliesParams.IsSupportTransfer = true;
-                        queueFamiliesParams.TransferIndex = i;
-                        if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Transfer) == QueueFlags.Transfer)
-                        {
-                            queueFamiliesParams.IsSupportSeparatedTransfer = true;
-                            queueParams.Add(queueFamiliesParams);
-                            continue;
-                        }
-                    }
-                    if ((queueFamilyPropertiesItem.QueueFlags & QueueFlags.Graphics) == QueueFlags.Graphics)
-                    {
-                        queueFamiliesParams.IsSupportGraphics = true;
-                        queueFamiliesParams.GraphicsIndex = i;
-                        if ((queueFamilyPropertiesItem.QueueFlags | QueueFlags.Graphics) == QueueFlags.Graphics)
-                        {
-                            queueFamiliesParams.IsSupportSeparatedGraphics = true;
-                            queueParams.Add(queueFamiliesParams);
-                        }
-                    }
-                    queueParams.Add(queueFamiliesParams);
-                }
-
-                VulkanAvailablePhysicalDeviceQueueFamiliesParams = queueParams;
+                var physicalDeviceQueueParams = GetVulkanAvailablePhysicalDeviceQueueFamiliesParams();
 
                 GraphicsQueueIndex = -1;
                 PresentQueueIndex = -1;
@@ -206,10 +306,10 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 TransferQueueIndex = -1;
 
                 var queueFamilyParams =
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportSeparatedGraphics &&
                                  queue.IsSupportPresent) ??
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportGraphics &&
                                  queue.IsSupportPresent);
 
@@ -221,9 +321,9 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 else
                 {
                     queueFamilyParams =
-                        VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                        physicalDeviceQueueParams.FirstOrDefault(
                             queue => queue.IsSupportSeparatedGraphics) ??
-                        VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                        physicalDeviceQueueParams.FirstOrDefault(
                             queue => queue.IsSupportGraphics);
 
                     if (queueFamilyParams != null)
@@ -232,7 +332,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                     }
 
                     queueFamilyParams =
-                        VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                        physicalDeviceQueueParams.FirstOrDefault(
                             queue => queue.IsSupportPresent);
 
                     if (queueFamilyParams != null)
@@ -242,10 +342,10 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 }
 
                 queueFamilyParams =
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportCompute &&
                                  queue.IsSupportSeparatedCompute) ??
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportCompute);
 
                 if (queueFamilyParams != null)
@@ -254,10 +354,10 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                 }
 
                 queueFamilyParams =
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportTransfer &&
                                  queue.IsSupportSeparatedTransfer) ??
-                    VulkanAvailablePhysicalDeviceQueueFamiliesParams.FirstOrDefault(
+                    physicalDeviceQueueParams.FirstOrDefault(
                         queue => queue.IsSupportTransfer);
 
                 if (queueFamilyParams != null)
@@ -265,25 +365,35 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Physical
                     TransferQueueIndex = queueFamilyParams.TransferIndex;
                 }
 
-                AvailableSurfaceCapabilities = PhysicalDevice.GetSurfaceCapabilitiesKHR(VulkanInstance.VulkanSurface.Surface);
-
-                var availableSurfaceFormats = PhysicalDevice.GetSurfaceFormatsKHR(VulkanInstance.VulkanSurface.Surface);
-
-                AvailableSurfaceFormats = availableSurfaceFormats.ToList();
-
-                var availableSurfacePresentModes =
-                    PhysicalDevice.GetSurfacePresentModesKHR(VulkanInstance.VulkanSurface.Surface);
-
-                AvailableSurfacePresentModes = availableSurfacePresentModes.ToList();
-
                 _isInit = true;
             }
         }
-        
 
         public ExtensionProperties GetExtensionPropertiesByName(String extensionName)
         {
-            return PhysicalDeviceSupportedExtensions.FirstOrDefault(e => e.ExtensionName == extensionName);
+            return GetPhysicalDeviceExtensions().FirstOrDefault(e => e.ExtensionName == extensionName);
         }
+
+        #endregion
+
+        #endregion
+
+        #region .fields
+
+        private Boolean _isInit;
+
+        #endregion
+
+        #region .ctors
+
+        public VulkanPhysicalDevice()
+        {
+            PresentQueueIndex = -1;
+            ComputeQueueIndex = -1;
+            GraphicsQueueIndex = -1;
+            TransferQueueIndex = -1;
+        }
+
+        #endregion
     }
 }

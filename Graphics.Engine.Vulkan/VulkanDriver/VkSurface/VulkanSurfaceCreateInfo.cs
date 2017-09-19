@@ -11,7 +11,7 @@ namespace Graphics.Engine.VulkanDriver.VkSurface
         public VulkanInstance VulkanInstance { get; set; }
 
         /// <summary>
-        /// Экземпял окна для вывод изображения
+        /// Экземпляр окна для вывода изображения
         /// </summary>
         public INativeWindow VulkanWindow { get; set; }
     }

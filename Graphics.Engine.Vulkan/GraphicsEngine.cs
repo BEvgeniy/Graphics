@@ -68,6 +68,7 @@ namespace Graphics.Engine
             else
             {
                 _vulkanMainWindow.Title = _fps.ToString();
+               
                 _fps = 0;
                 _dt = DateTime.Now;
             }

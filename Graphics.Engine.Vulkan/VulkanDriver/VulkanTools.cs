@@ -43,7 +43,6 @@ namespace Graphics.Engine.VulkanDriver
                 (Int32) ((vulkanVersion >> 12) & 0x3ff),
                 (Int32) (vulkanVersion & 0xfff));
         }
-
-        //public static Version Get
+      
     }
 }

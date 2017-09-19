@@ -19,17 +19,7 @@ namespace Graphics.Engine.VulkanDriver
         /// Флаг - определяет был ли создан экземпляр Vulkan
         /// </summary>
         private Boolean _isVulkanInit;
-
-        /// <summary>
-        /// Обертка над Device и PhysicalDevice (выбранный видеоадаптер)
-        /// Device - это логическое устройство, 
-        /// и таких устройств можно создать много на основе одного PhysicalDevice,
-        /// при этом каждое такое логичесвое устройство может иметь разную доступную функциональность
-        /// Скажем так, пусть устройство PhysicalDevice имеет 2 фичи: VkBool32 geometryShader и VkBool32 tessellationShader;
-        /// Так вот мы можем создать два логических устройства, одно из которых будет поддерживать одно из фич, а второе оставшуюся фичу
-        /// </summary>
-        private VulkanDevice _vulkanDevice;
-
+        
         /// <summary>
         /// Объект для синхронизации выполнения критических участков кода. 
         /// В данном случае, позволяется, помеченный участок кода выполнять только одним потоком.
@@ -86,6 +76,8 @@ namespace Graphics.Engine.VulkanDriver
 
         #endregion
 
+        #region .public sector
+
         public VulkanManager()
         {
             _isVulkanInit = false;
@@ -123,7 +115,7 @@ namespace Graphics.Engine.VulkanDriver
                 WriteCommandBuffers();
                 // Создадим объекты синхронизации видеокарты и хоста 
                 СreateSemaphores();
-                
+
             }
         }
 
@@ -133,19 +125,19 @@ namespace Graphics.Engine.VulkanDriver
 
             var imageIndex = VulkanLogicalDevice.Device.AcquireNextImageKHR(VulkanSwapchain.Swapchain, UInt64.MaxValue,
                 ImageAvailableSemaphore);
-            
+
             var submitInfo = new SubmitInfo();
 
-            Semaphore[] waitSemaphores = {ImageAvailableSemaphore};
-            PipelineStageFlags[] waitStages = {PipelineStageFlags.ColorAttachmentOutput};
+            Semaphore[] waitSemaphores = { ImageAvailableSemaphore };
+            PipelineStageFlags[] waitStages = { PipelineStageFlags.ColorAttachmentOutput };
             submitInfo.WaitSemaphoreCount = 1;
             submitInfo.WaitSemaphores = waitSemaphores;
             submitInfo.WaitDstStageMask = waitStages;
 
             submitInfo.CommandBufferCount = 1;
-            submitInfo.CommandBuffers = new[] {CommandBuffers.ElementAt((Int32) imageIndex)};
+            submitInfo.CommandBuffers = new[] { CommandBuffers.ElementAt((Int32)imageIndex) };
 
-            Semaphore[] signalSemaphores = {RenderFinishedSemaphore};
+            Semaphore[] signalSemaphores = { RenderFinishedSemaphore };
             submitInfo.SignalSemaphoreCount = 1;
             submitInfo.SignalSemaphores = signalSemaphores;
 
@@ -157,13 +149,118 @@ namespace Graphics.Engine.VulkanDriver
                 WaitSemaphores = signalSemaphores
             };
 
-            SwapchainKhr[] swapChains = {VulkanSwapchain.Swapchain};
+            SwapchainKhr[] swapChains = { VulkanSwapchain.Swapchain };
             presentInfo.SwapchainCount = 1;
             presentInfo.Swapchains = swapChains;
 
-            presentInfo.ImageIndices = new[] {imageIndex};
+            presentInfo.ImageIndices = new[] { imageIndex };
 
             VulkanLogicalDevice.GraphicsQueue.PresentKHR(presentInfo);
+        }
+
+        public void WaitIdle()
+        {
+            VulkanLogicalDevice.Device.WaitIdle();
+        }
+
+        #endregion
+
+        #region .private sector (instance, physical and logical devices)
+
+        private void CreateInstance(VulkanWindow vulkanMainWindow)
+        {
+            VulkanInstance = new VulkanInstance();
+
+            var createInfo = new VulkanInstanceCreateInfo
+            {
+                IsDebugEnabled = SettingsManager.IsDebugEnabled,
+                VulkanApiVersion = SettingsManager.VulkanApiVersion,
+                ApplicationName = SettingsManager.ApplicationName,
+                EngineName = SettingsManager.EngineName,
+                ApplicationVersion = SettingsManager.ApplicationVersion,
+                EngineVersion = SettingsManager.EngineVersion,
+                RequestedExtensionNames = SettingsManager.RequestedInstanceExtensionNames,
+                RequestedLayerNames = SettingsManager.RequestedInstanceLayerNames,
+                VulkanWindow = vulkanMainWindow
+            };
+
+            VulkanInstance.Create(createInfo);
+        }
+
+        private void CreatePhysicalDevice()
+        {
+            var searchInfo = new VulkanPhysicalDeviceSearchInfo
+            {
+                IsRequestedSupportGraphicsQueue = true,
+                IsRequestedSupportPresentationQueue = true,
+                IsRequestedSupportTransferQueue = false, // пока нет нужды
+                IsRequestedSupportComputeQueue = false, // пока нет нужды
+                RequestedFeatures = new PhysicalDeviceFeatures
+                {
+                    // Задаем поддержку той функциональности, без которой не обойтись
+                    // Устанавливать все подряд не следует
+                    FillModeNonSolid = true,
+                },
+                RequestedExtensionNames = SettingsManager.RequestedPhysicalDeviceExtensionNames,
+                PreferredType = PhysicalDeviceType.DiscreteGpu,
+                PreferredVulkanApiVersion = SettingsManager.VulkanApiVersion,
+                VulkanSurface = VulkanInstance.VulkanSurface
+            };
+
+            var foundPhysicalDevice = VulkanInstance.FindSuitablePhysicalDevice(searchInfo);
+
+            if (foundPhysicalDevice == null)
+            {
+                throw new Exception("Не найден подходящий видеоадаптер для работы с приложением.");
+            }
+
+            var createInfo = new VulkanPhysicalDeviceCreateInfo
+            {
+                VulkanInstance = VulkanInstance,
+                VulkanSurface = VulkanInstance.VulkanSurface,
+                PhysicalDevice = foundPhysicalDevice
+            };
+
+            VulkanPhysicalDevice = new VulkanPhysicalDevice();
+            VulkanPhysicalDevice.Create(createInfo);
+        }
+
+        private void CreateLogicalDevice()
+        {
+            var createInfo = new VulkanLogicalDeviceCreateInfo
+            {
+                VulkanPhysicalDevice = VulkanPhysicalDevice,
+                VulkanSurface = VulkanInstance.VulkanSurface,
+                RequestedFeatures = new PhysicalDeviceFeatures
+                {
+                    FillModeNonSolid = new Bool32(true),
+                    //WideLines = new Bool32(true)
+                },
+                RequestedExtensionNames = SettingsManager.RequestedLogicalDeviceExtensionNames,
+                IsRequestedCreateGraphicsQueue = true,
+                IsRequestedCreateComputeQueue = true,
+                IsRequestedCreateTransferQueue = true
+            };
+
+            VulkanLogicalDevice = new VulkanLogicalDevice();
+            VulkanLogicalDevice.Create(createInfo);
+        }
+
+        #endregion
+
+        #region .private sector
+
+        private void CreateSwapchain()
+        {
+            var createInfo = new VulkanSwapchainCreateInfo
+            {
+                VulkanPhysicalDevice = VulkanPhysicalDevice,
+                VulkanLogicalDevice = VulkanLogicalDevice,
+                VulkanSurface = VulkanInstance.VulkanSurface
+            };
+
+            VulkanSwapchain = new VulkanSwapchain();
+            VulkanSwapchain.Create(createInfo);
         }
 
         private void СreateSemaphores()
@@ -182,12 +279,12 @@ namespace Graphics.Engine.VulkanDriver
                     Flags = CommandBufferUsageFlags.SimultaneousUse,
                     //InheritanceInfo = null // Optional
                 };
-                
+
                 CommandBuffers[i].Begin(beginInfo);
 
                 var clearColor = new ClearValue
                 {
-                    Color = new ClearColorValue(new[] { 0.2f, 0.2f, 0.2f, 1.0f })
+                    Color = new ClearColorValue(new[] {0.2f, 0.2f, 0.2f, 1.0f})
                 };
 
                 var renderPassInfo = new RenderPassBeginInfo
@@ -202,7 +299,7 @@ namespace Graphics.Engine.VulkanDriver
                         Extent = VulkanSwapchain.SurfaceExtent2D
                     }
                 };
-                
+
                 CommandBuffers[i].CmdBeginRenderPass(renderPassInfo, SubpassContents.Inline);
                 CommandBuffers[i].CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
                 CommandBuffers[i].CmdDraw(3, 1, 0, 0);
@@ -361,9 +458,10 @@ namespace Graphics.Engine.VulkanDriver
                 pipelineInfo.Subpass = 0;
                 //pipelineInfo.BasePipelineHandle = new Pipeline();
                 //pipelineInfo.BasePipelineIndex = -1; // Optional
-            };
+            }
+            ;
 
-           Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(null, new []{ pipelineInfo })[0];
+            Pipeline = VulkanLogicalDevice.Device.CreateGraphicsPipelines(null, new[] {pipelineInfo})[0];
         }
 
         private PipelineInputAssemblyStateCreateInfo CreatePipelineInputAssemblyState()
@@ -388,7 +486,8 @@ namespace Graphics.Engine.VulkanDriver
             return vertexInputState;
         }
 
-        private PipelineShaderStageCreateInfo CreatePipelineShaderStage(ShaderStageFlags shaderType, ShaderModule module)
+        private PipelineShaderStageCreateInfo CreatePipelineShaderStage(ShaderStageFlags shaderType,
+            ShaderModule module)
         {
             var createInfo = new PipelineShaderStageCreateInfo
             {
@@ -565,99 +664,7 @@ namespace Graphics.Engine.VulkanDriver
 
             return layout;
         }
-
-        private void CreateSwapchain()
-        {
-            var createInfo = new VulkanSwapchainCreateInfo
-            {
-                VulkanPhysicalDevice = VulkanPhysicalDevice,
-                VulkanLogicalDevice = VulkanLogicalDevice,
-                VulkanSurface = VulkanInstance.VulkanSurface
-            };
-
-            VulkanSwapchain = new VulkanSwapchain();
-            VulkanSwapchain.Create(createInfo);
-        }
-
-        #region private sector
-
-        private void CreateInstance(VulkanWindow vulkanMainWindow)
-        {
-            VulkanInstance = new VulkanInstance();
-
-            var createInfo = new VulkanInstanceCreateInfo
-            {
-                IsDebugEnabled = SettingsManager.IsDebugEnabled,
-                VulkanApiVersion = SettingsManager.VulkanApiVersion,
-                ApplicationName = SettingsManager.ApplicationName,
-                EngineName = SettingsManager.EngineName,
-                ApplicationVersion = SettingsManager.ApplicationVersion,
-                EngineVersion = SettingsManager.EngineVersion,
-                RequestedExtensionNames = SettingsManager.RequestedInstanceExtensionNames,
-                RequestedLayerNames = SettingsManager.RequestedInstanceLayerNames,
-                VulkanWindow = vulkanMainWindow
-            };
-
-            VulkanInstance.Create(createInfo);
-        }
-
-        private void CreatePhysicalDevice()
-        {
-            var searchInfo = new VulkanPhysicalDeviceSearchInfo
-            {
-                IsRequestedSupportGraphicsQueue = true,
-                IsRequestedSupportPresentationQueue = true,
-                VulkanSurface = VulkanInstance.VulkanSurface,
-                IsRequestedSupportTransferQueue = false, // пока нет нужды
-                IsRequestedSupportComputeQueue = false, // пока нет нужды
-                RequestedFeatures = new PhysicalDeviceFeatures(), // пока все false
-                PreferredType = PhysicalDeviceType.DiscreteGpu,
-                PreferredVulkanApiVersion = SettingsManager.VulkanApiVersion,
-                RequestedExtensionNames = SettingsManager.RequestedPhysicalDeviceExtensionNames
-            };
-
-            var foundPhysicalDevice = VulkanInstance.FindSuitablePhysicalDevice(searchInfo);
-            if (foundPhysicalDevice == null)
-            {
-                throw new Exception("Не найден подходящий видеоадаптер для работы с приложением.");
-            }
-
-            var createInfo = new VulkanPhysicalDeviceCreateInfo
-            {
-                VulkanInstance = VulkanInstance,
-                VulkanSurface = VulkanInstance.VulkanSurface,
-                PhysicalDevice = foundPhysicalDevice
-            };
-
-            VulkanPhysicalDevice = new VulkanPhysicalDevice();
-            VulkanPhysicalDevice.Create(createInfo);
-        }
-
-        private void CreateLogicalDevice()
-        {
-            var createInfo = new VulkanLogicalDeviceCreateInfo
-            {
-                VulkanPhysicalDevice = VulkanPhysicalDevice,
-                VulkanSurface = VulkanInstance.VulkanSurface,
-                RequestedFeatures = new PhysicalDeviceFeatures
-                {
-                    FillModeNonSolid = new Bool32(true) 
-                }, // пока все false
-                RequestedExtensionNames = SettingsManager.RequestedLogicalDeviceExtensionNames,
-                IsRequestedCreateGraphicsQueue = true,
-                IsRequestedCreateComputeQueue = true,
-                IsRequestedCreateTransferQueue = true
-            };
-            
-            VulkanLogicalDevice = new VulkanLogicalDevice();
-            VulkanLogicalDevice.Create(createInfo);
-        }
-
+        
         #endregion
-
-        public void WaitIdle()
-        {
-           VulkanLogicalDevice.Device.WaitIdle();
-        }
     }
 }

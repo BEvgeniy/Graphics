@@ -74,7 +74,7 @@ namespace Graphics.Engine.VulkanDriver.VkSwapchain
 
         private SurfaceFormatKhr ChooseSurfaceFormat()
         {
-            var availableFormats = VulkanPhysicalDevice.AvailableSurfaceFormats;
+            var availableFormats = VulkanPhysicalDevice.GetAvailableSurfaceFormats();
             if (availableFormats.Count == 1 && availableFormats[0].Format == Format.Undefined)
             {
                 return new SurfaceFormatKhr
@@ -98,7 +98,7 @@ namespace Graphics.Engine.VulkanDriver.VkSwapchain
 
         private PresentModeKhr ChoosePresentMode()
         {
-            var availablePresentModes = VulkanPhysicalDevice.AvailableSurfacePresentModes;
+            var availablePresentModes = VulkanPhysicalDevice.GetAvailableSurfacePresentModes();
 
             foreach (var availablePresentMode in availablePresentModes)
             {
@@ -111,9 +111,9 @@ namespace Graphics.Engine.VulkanDriver.VkSwapchain
             return PresentModeKhr.Fifo;
         }
 
-        private Extent2D ChooseSwapExtent()
+        public Extent2D ChooseSwapExtent()
         {
-            var availableCapabilities = VulkanPhysicalDevice.AvailableSurfaceCapabilities;
+            var availableCapabilities = VulkanPhysicalDevice.GetAvailableSurfaceCapabilities();
 
             if (availableCapabilities.CurrentExtent.Width != UInt32.MaxValue)
             {
@@ -121,7 +121,7 @@ namespace Graphics.Engine.VulkanDriver.VkSwapchain
             }
             else
             {
-                // TODO: Читать из другого места, ясвно задавать не хорошо
+                // TODO: Читать из другого места, явно задавать не хорошо
                 // TODO: надо предусмотреть константы для приложения
                 var actualExtent = new Extent2D
                 {
@@ -141,7 +141,7 @@ namespace Graphics.Engine.VulkanDriver.VkSwapchain
 
         private SwapchainKhr CreateSwapChain()
         {
-            var availableCapabilities = VulkanPhysicalDevice.AvailableSurfaceCapabilities;
+            var availableCapabilities = VulkanPhysicalDevice.GetAvailableSurfaceCapabilities();
             var imageCount = availableCapabilities.MinImageCount + 1;
             if (availableCapabilities.MaxImageCount > 0 && imageCount > availableCapabilities.MaxImageCount)
             {

@@ -11,12 +11,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
     /// </summary>
     internal sealed class VulkanLogicalDevice
     {
-        private Boolean _isInit;
-
-        public VulkanLogicalDevice()
-        {
-            VulkanEnabledLogicalDeviceExtensions = new List<ExtensionProperties>();
-        }
+        #region .props
 
         /// <summary>
         /// Видеоадаптер, для которого было создано логическое устройство (помещенное в объект обертку).
@@ -72,12 +67,16 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
         /// <summary>
         /// Названия расширений, которые подключены к созданному логическому устройству.
         /// </summary>
-        public IReadOnlyList<ExtensionProperties> VulkanEnabledLogicalDeviceExtensions { get; private set; }
+        public IReadOnlyList<ExtensionProperties> EnabledLogicalDeviceExtensions { get; private set; }
 
         /// <summary>
         /// Возможности физического устройства, которые используются логическим устройством.
         /// </summary>
-        public PhysicalDeviceFeatures VulkanEnabledLogicalDeviceFeatures { get; private set; }
+        public PhysicalDeviceFeatures EnabledLogicalDeviceFeatures { get; private set; }
+
+        #endregion
+
+        #region .public.sector
 
         /// <summary>
         /// Создает логическое устройство с указанными пользователем расширениями и свойствами (фичами).
@@ -98,22 +97,26 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 
                 VulkanPhysicalDevice = vulkanLogicalDeviceCreateInfo.VulkanPhysicalDevice;
 
-                var extensions = new List<ExtensionProperties>();
-                foreach (var name in vulkanLogicalDeviceCreateInfo.RequestedExtensionNames)
+                var requestedExtensions = new List<ExtensionProperties>();
+                var availablePhysicalDeviceExtensions = VulkanPhysicalDevice.GetPhysicalDeviceExtensions();
+
+                foreach (var extensionName in vulkanLogicalDeviceCreateInfo.RequestedExtensionNames)
                 {
-                    var extension = VulkanPhysicalDevice.GetExtensionPropertiesByName(name);
+                    var extension =
+                        availablePhysicalDeviceExtensions.FirstOrDefault(e => e.ExtensionName == extensionName);
                     if (extension == null)
                     {
                         throw new Exception(
-                            "Среди доступных расширений поддерживаемых физическим устройством, не обнаружено запрошенное расширение с именем '" +
-                            name + "'");
+                            "Среди доступных расширений поддерживаемых физическим устройством, " +
+                            "не обнаружено запрошенное расширение с именем '" +
+                            extensionName + "'");
                     }
-                    extensions.Add(extension);
+                    requestedExtensions.Add(extension);
                 }
+                EnabledLogicalDeviceExtensions = requestedExtensions;
 
-                VulkanEnabledLogicalDeviceExtensions = extensions;
                 // TODO: Как только определимся с поддерживаемой функциональностью, тут же сделать проверки на соответствие
-                VulkanEnabledLogicalDeviceFeatures = vulkanLogicalDeviceCreateInfo.RequestedFeatures;
+                EnabledLogicalDeviceFeatures = vulkanLogicalDeviceCreateInfo.RequestedFeatures;
 
                 // Необходимые типы очередей должны задаваться на этапе создания логического устройства
 
@@ -127,6 +130,13 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
                 // Очередь для отрисовки графики
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateGraphicsQueue)
                 {
+                    if (!VulkanPhysicalDevice.IsGraphicsQueueSupported)
+                    {
+                        throw new Exception("Среди доступных очередей физического устройства " +
+                                            "не обнаружена очередь поддерживающая " +
+                                            "выполнение графических команд");
+                    }
+
                     var queueInfo = new DeviceQueueCreateInfo
                     {
                         QueueFamilyIndex = (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex,
@@ -138,6 +148,13 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateComputeQueue)
                 {
+                    if (!VulkanPhysicalDevice.IsComputeQueueSupported)
+                    {
+                        throw new Exception("Среди доступных очередей физического устройства " +
+                                            "не обнаружена очередь поддерживающая " +
+                                            "выполнение команд вычислений");
+                    }
+
                     if ((UInt32) VulkanPhysicalDevice.ComputeQueueIndex !=
                         (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex)
                     {
@@ -153,6 +170,13 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreateTransferQueue)
                 {
+                    if (!VulkanPhysicalDevice.IsTransferQueueSupported)
+                    {
+                        throw new Exception("Среди доступных очередей физического устройства " +
+                                            "не обнаружена очередь поддерживающая " +
+                                            "выполнение команд работы с памятью");
+                    }
+
                     if ((UInt32) VulkanPhysicalDevice.TransferQueueIndex !=
                         (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex &&
                         (UInt32) VulkanPhysicalDevice.TransferQueueIndex !=
@@ -170,6 +194,13 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
 
                 if (vulkanLogicalDeviceCreateInfo.IsRequestedCreatePresentationQueue)
                 {
+                    if (!VulkanPhysicalDevice.IsPresentQueueSupported)
+                    {
+                        throw new Exception("Среди доступных очередей физического устройства " +
+                                            "не обнаружена очередь поддерживающая " +
+                                            "выполнение команд представления");
+                    }
+
                     if ((UInt32) VulkanPhysicalDevice.PresentQueueIndex !=
                         (UInt32) VulkanPhysicalDevice.GraphicsQueueIndex &&
                         (UInt32) VulkanPhysicalDevice.PresentQueueIndex !=
@@ -187,7 +218,7 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
                     }
                 }
 
-                var deviceCreateInfo = new DeviceCreateInfo {EnabledFeatures = VulkanEnabledLogicalDeviceFeatures};
+                var deviceCreateInfo = new DeviceCreateInfo {EnabledFeatures = EnabledLogicalDeviceFeatures};
 
                 if (queueCreateInfos.Count > 0)
                 {
@@ -195,10 +226,10 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
                     deviceCreateInfo.QueueCreateInfos = queueCreateInfos.ToArray();
                 }
 
-                if (VulkanEnabledLogicalDeviceExtensions.Count > 0)
+                if (EnabledLogicalDeviceExtensions.Count > 0)
                 {
-                    deviceCreateInfo.EnabledExtensionCount = (UInt32) VulkanEnabledLogicalDeviceExtensions.Count;
-                    deviceCreateInfo.EnabledExtensionNames = VulkanEnabledLogicalDeviceExtensions
+                    deviceCreateInfo.EnabledExtensionCount = (UInt32) EnabledLogicalDeviceExtensions.Count;
+                    deviceCreateInfo.EnabledExtensionNames = EnabledLogicalDeviceExtensions
                         .Select(e => e.ExtensionName)
                         .ToArray();
                 }
@@ -275,5 +306,21 @@ namespace Graphics.Engine.VulkanDriver.VkDevice.Logical
             return cmdPool;
         }
 
+        #endregion
+
+        #region .fields
+
+        private Boolean _isInit;
+
+        #endregion
+
+        #region .ctors
+
+        public VulkanLogicalDevice()
+        {
+            EnabledLogicalDeviceExtensions = new List<ExtensionProperties>();
+        }
+
+        #endregion
     }
 }

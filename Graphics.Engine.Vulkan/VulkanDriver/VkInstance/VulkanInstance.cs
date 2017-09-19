@@ -6,7 +6,6 @@ using Graphics.Engine.VulkanDriver.VkDevice.Physical;
 using Graphics.Engine.VulkanDriver.VkSurface;
 using OpenTK;
 using Vulkan;
-using Vulkan;
 
 namespace Graphics.Engine.VulkanDriver.VkInstance
 {
@@ -15,27 +14,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
     /// </summary>
     internal sealed class VulkanInstance
     {
-        private Boolean _isInit;
-
-        public VulkanInstance()
-        {
-            AvailableInstanceExtensions = new List<ExtensionProperties>();
-            AvailableInstanceLayers = new List<LayerProperties>();
-            PhysicalDevices = new List<PhysicalDevice>();
-            EnabledInstanceExtensions = new List<ExtensionProperties>();
-            EnabledInstanceLayers = new List<LayerProperties>();
-        }
-
-        /// <summary>
-        /// Предустановленные расширения в системе, которые доступны для задания при создании экземпляра Vulkan 
-        /// </summary>
-        public IReadOnlyList<ExtensionProperties> AvailableInstanceExtensions { get; private set; }
-
-        /// <summary>
-        /// Предустановленные слои в системе, экземпляра которые доступны для задания при создании экземпляра Vulkan 
-        /// </summary>
-        /// TODO: (надо разобраться какие слои для чего нужны - очень слабое понимание на сегодняшний день)
-        public IReadOnlyList<LayerProperties> AvailableInstanceLayers { get; private set; }
+        #region .props
 
         /// <summary>
         /// Экземпляр(объект или инстанс) Vulkan - хранит все состояния для текущего приложения
@@ -44,45 +23,27 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
         public Instance Instance { get; private set; }
 
         /// <summary>
-        /// Названия расширений, которые подключены к созданному экземпляру Vulkan
+        /// Поверхность для отрисовки заданная по умолчанию (создается после создания экземпляра Vulkan)
+        /// Текущая поверхность используется при создании цепочки свопинга или полчении
+        /// дополнительных сведений о имеющихся в системе форматов отображения, цветовых(ой) схем(ы)
+        /// </summary>
+        public VulkanSurface VulkanSurface { get; private set; }
+
+        /// <summary>
+        /// Названия расширений, которые были затребованы (переданы в коструктор) при создании экземпяра Vulkan
         /// </summary>
         public IReadOnlyList<ExtensionProperties> EnabledInstanceExtensions { get; private set; }
 
         /// <summary>
-        /// Названия слоев, которые подключены к созданному экземпляру Vulkan
+        /// Названия слоев, которые были затребованы (переданы в коструктор) при создании экземпяра Vulkan
         /// </summary>
         public IReadOnlyList<LayerProperties> EnabledInstanceLayers { get; private set; }
 
-        /// <summary>
-        /// Список физических устройств (видеоадаптеров) доступных в системе (интегрированная или внешняя или тандем (sli))
-        /// </summary>
-        public IReadOnlyList<PhysicalDevice> PhysicalDevices { get; private set; }
+        #endregion
 
-        /// <summary>
-        /// Поверхность для отрисовки заданная по умолчанию (создается после создания экземпляра Vulkan)
-        /// </summary>
-        public VulkanSurface VulkanSurface { get; private set; }
+        #region .public.sector
 
-        public ExtensionProperties GetAvailableInstanceExtensionPropertiesByName(String extensionName)
-        {
-            return GetExtensionPropertiesByName(AvailableInstanceExtensions, extensionName);
-        }
-
-        public static ExtensionProperties GetExtensionPropertiesByName(IReadOnlyList<ExtensionProperties> extensions,
-            String extensionName)
-        {
-            return extensions.FirstOrDefault(e => e.ExtensionName == extensionName);
-        }
-
-        public LayerProperties GetLayerPropertiesByName(String layerName)
-        {
-            return AvailableInstanceLayers.FirstOrDefault(e => e.LayerName == layerName);
-        }
-
-        public VulkanSurface CreateSurface(INativeWindow vulkanWindow)
-        {
-            return CreateSurface(this, vulkanWindow);
-        }
+        #region .static
 
         public static VulkanSurface CreateSurface(VulkanInstance vulkanInstance, INativeWindow vulkanWindow)
         {
@@ -94,6 +55,96 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
             var vulkanSurface = new VulkanSurface();
             vulkanSurface.Create(createInfo);
             return vulkanSurface;
+        }
+
+        /// <summary>
+        /// Возвращает свойства слоя Vulkan по указанному имени или null
+        /// </summary>
+        public static LayerProperties GetLayerPropertiesByName(IReadOnlyList<LayerProperties> layers,
+            String layerName)
+        {
+            return layers.FirstOrDefault(e => e.LayerName == layerName);
+        }
+
+        /// <summary>
+        /// Возвращает свойства расширения Vulkan по указанному имени или null
+        /// </summary>
+        public static ExtensionProperties GetExtensionPropertiesByName(IReadOnlyList<ExtensionProperties> extensions,
+            String extensionName)
+        {
+            return extensions.FirstOrDefault(e => e.ExtensionName == extensionName);
+        }
+
+        /// <summary>
+        /// Предустановленные расширения в системе, которые доступны для задания при создании экземпляра Vulkan 
+        /// </summary>
+        public static IReadOnlyList<ExtensionProperties> GetAvailableInstanceExtensions()
+        {
+            var availInstExtensions = new List<ExtensionProperties>();
+            var availableInstanceExtensions = Commands.EnumerateInstanceExtensionProperties(null);
+            if (availableInstanceExtensions != null && availableInstanceExtensions.Length > 0)
+            {
+                availInstExtensions.AddRange(availableInstanceExtensions);
+            }
+            return availInstExtensions;
+        }
+
+        /// <summary>
+        /// Предустановленные слои в системе, экземпляра которые доступны для задания при создании экземпляра Vulkan 
+        /// Слои используются для подключения разных функций отладки работы Vulkan
+        /// Наример можно влючить вывод отладочной информации по переданным парметрам в функции и последовательность их вызова,
+        /// корректность передаваемых параметров, корректность создания и уничтожения объектов (утечки памяти)
+        /// корректность вызовов при использовании многопоточности итд.
+        /// </summary>
+        public static IReadOnlyList<LayerProperties> GetAvailableInstanceLayers()
+        {
+            var availInstLayers = new List<LayerProperties>();
+            var availableInstanceLayers = Commands.EnumerateInstanceLayerProperties();
+            if (availableInstanceLayers != null && availableInstanceLayers.Length > 0)
+            {
+                availInstLayers.AddRange(availableInstanceLayers);
+            }
+            return availInstLayers;
+        }
+
+        #endregion
+
+        #region .instance
+
+        /// <summary>
+        /// Список физических устройств (видеоадаптеров) доступных в системе (интегрированная или внешняя или тандем (sli))
+        /// </summary>
+        public IReadOnlyList<PhysicalDevice> GetPhysicalDevices()
+        {
+            if (Instance == null)
+            {
+                throw new Exception("Не создан экземпляр Vulkan");
+            }
+            var physicalDevices = Instance.EnumeratePhysicalDevices();
+            if (physicalDevices == null || physicalDevices.Length <= 0)
+            {
+                throw new Exception(
+                    "В системе не установлен подходящий видеоадаптер поддерживающий работу с Vulkan");
+            }
+            return physicalDevices;
+        }
+
+        /// <summary>
+        /// Позволяет узнать поддерживает ли Vulkan расширение по указанному имени
+        /// </summary>
+        public Boolean IsExtensionSupportedByInstance(String extensionName)
+        {
+            return GetExtensionPropertiesByName(GetAvailableInstanceExtensions(), extensionName) != null;
+        }
+
+        public Boolean IsLayerSupportedByInstance(String layerName)
+        {
+            return GetAvailableInstanceLayers().FirstOrDefault(e => e.LayerName == layerName) != null;
+        }
+
+        public VulkanSurface CreateSurface(INativeWindow vulkanWindow)
+        {
+            return CreateSurface(this, vulkanWindow);
         }
 
         public void Create(VulkanInstanceCreateInfo vulkanInstanceCreateInfo)
@@ -109,58 +160,44 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 {
                     return;
                 }
-                // Получим расширения и слои, которые доступны для использования при создании экземпляра Vulkan
-
-                var availInstExtensions = new List<ExtensionProperties>();
-                var availInstLayers = new List<LayerProperties>();
-
-                var availableInstanceExtensions = Commands.EnumerateInstanceExtensionProperties(null);
-
-                if (availableInstanceExtensions != null && availableInstanceExtensions.Length > 0)
-                {
-                    availInstExtensions.AddRange(availableInstanceExtensions);
-                    AvailableInstanceExtensions = availInstExtensions;
-                }
-
-                var availableInstanceLayers = Commands.EnumerateInstanceLayerProperties();
-
-                if (availableInstanceLayers != null && availableInstanceLayers.Length > 0)
-                {
-                    availInstLayers.AddRange(availableInstanceLayers);
-                    AvailableInstanceLayers = availInstLayers;
-                }
 
                 var requestedLayers = new List<LayerProperties>();
                 var requestedExtensions = new List<ExtensionProperties>();
 
-                foreach (var name in vulkanInstanceCreateInfo.RequestedExtensionNames)
+                var availableInstanceExtensions = GetAvailableInstanceExtensions();
+
+                foreach (var extensionName in vulkanInstanceCreateInfo.RequestedExtensionNames)
                 {
-                    var extension = GetAvailableInstanceExtensionPropertiesByName(name);
+                    var extension = availableInstanceExtensions.FirstOrDefault(e => e.ExtensionName == extensionName);
                     if (extension == null)
                     {
                         throw new Exception(
                             "Среди доступных расширений в системе, не обнаружено запрошенное расширение с именем '" +
-                            name + "'");
+                            extensionName + "'");
                     }
                     requestedExtensions.Add(extension);
                 }
 
+                var availableInstanceLayers = GetAvailableInstanceLayers();
+
                 // Если собираемся отлаживаться и проходить валидацию по слоям, надо подключить расширение отладки и слои валидации
-                foreach (var name in vulkanInstanceCreateInfo.RequestedLayerNames)
+                foreach (var layerName in vulkanInstanceCreateInfo.RequestedLayerNames)
                 {
-                    var layer = GetLayerPropertiesByName(name);
+                    var layer = availableInstanceLayers.FirstOrDefault(e => e.LayerName == layerName);
                     if (layer == null)
                     {
                         throw new Exception(
-                            "Среди доступных слоев в системе, не обнаружено запрошенный слой с именем '" +
-                            name + "'");
+                            "Среди доступных слоев в системе, не обнаружен запрошенный слой с именем '" +
+                            layerName + "'");
                     }
                     requestedLayers.Add(layer);
                 }
 
                 EnabledInstanceExtensions = requestedExtensions;
                 EnabledInstanceLayers = requestedLayers;
+
                 // Заполним необходимые параметры для создания экземпляра Vulkan
+
                 var appInfo = new ApplicationInfo
                 {
                     ApiVersion =
@@ -189,12 +226,13 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 // Создадим экземпляр Vulkan
                 Instance = new Instance(createInfo);
                 // Создадим поверхность (Поверхность будет связана с главным окном программы и пока единственным)
-                VulkanSurface = CreateSurface(this, vulkanInstanceCreateInfo.VulkanWindow);
+                VulkanSurface = CreateSurface(vulkanInstanceCreateInfo.VulkanWindow);
                 // Если требуется для отладки, включаем уровни проверки по умолчанию
                 if (SettingsManager.IsDebugEnabled)
                 {
                     // Указанные флаги отчетности определяют, какие сообщения для слоев следует отображать 
                     // Для проверки (отладки) приложения, битового флага Error и битового флага Warning, должно быть достаточно
+                    // но я пока подключу все
                     const DebugReportFlagsExt debugReportFlags =
                         DebugReportFlagsExt.Error
                         | DebugReportFlagsExt.Warning
@@ -203,21 +241,14 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                     // Дополнительные битового флаги включают информацию о производительности, загрузчике и другие отладочные сообщения
                     VulkanDebug.SetupDebugging(Instance, debugReportFlags);
                 }
-                var physicalDevices = Instance.EnumeratePhysicalDevices();
-                if (physicalDevices == null || physicalDevices.Length <= 0)
-                {
-                    throw new Exception(
-                        "В системе не установлен подходящий видеоадаптер поддерживающий работу с Vulkan");
-                }
-
-                PhysicalDevices = new List<PhysicalDevice>(physicalDevices);
 
                 if (SettingsManager.IsDebugEnabled)
                 {
+                    var physicalDevices = GetPhysicalDevices();
                     Console.WriteLine("Информация по видеоадаптерам в системе");
-                    for (var i = 0; i < PhysicalDevices.Count; i++)
+                    for (var i = 0; i < physicalDevices.Count; i++)
                     {
-                        var physicalDevice = PhysicalDevices[i];
+                        var physicalDevice = physicalDevices[i];
                         var deviceProperties = physicalDevice.GetProperties();
                         Console.WriteLine("[" + i + "] Название видеоадаптера: " + deviceProperties.DeviceName);
                         Console.WriteLine("[" + i + "] Тип видеоадаптера: " +
@@ -239,18 +270,94 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
 
             PhysicalDevice physicalDevice = null;
             var maxRate = 0U;
+            var deviceType = PhysicalDeviceType.Other;
 
             foreach (var rate in rates)
             {
-                if (rate.Rate > maxRate)
+                if (rate.Rate >= maxRate)
                 {
                     maxRate = rate.Rate;
                     physicalDevice = rate.PhysicalDevice;
+                    deviceType = rate.PhysicalDeviceType;
+                }
+            }
+
+            if (deviceType != searchInfo.PreferredType)
+            {
+                // Попытаемся найти желаемый тип устройства с тем же рейтингом
+                var preferred = rates.FirstOrDefault(e => e.PhysicalDeviceType == searchInfo.PreferredType &&
+                                                          e.Rate == maxRate);
+                if (preferred != null)
+                {
+                    return preferred.PhysicalDevice;
                 }
             }
 
             return physicalDevice;
         }
+
+        #endregion
+
+        #endregion
+
+        #region .private.sector
+
+        #region .static
+
+        private static UInt32 GetFeaturesRate(UInt32 deviceRate, PhysicalDeviceFeatures physicalDeviceFeatures,
+            PhysicalDeviceFeatures requestedFeatures)
+        {
+            var rate = deviceRate;
+            if (requestedFeatures.FillModeNonSolid)
+            {
+                if (physicalDeviceFeatures.FillModeNonSolid)
+                {
+                    rate++;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            if (requestedFeatures.GeometryShader)
+            {
+                if (physicalDeviceFeatures.GeometryShader)
+                {
+                    rate++;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            if (requestedFeatures.TessellationShader)
+            {
+                if (physicalDeviceFeatures.TessellationShader)
+                {
+                    rate++;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            return rate;
+        }
+
+        private static VulkanPhysicalDeviceRate GetZeroPhysicalDeviceRate(PhysicalDevice physicalDevice,
+            PhysicalDeviceType physicalDeviceType)
+        {
+            return new VulkanPhysicalDeviceRate
+            {
+                PhysicalDevice = physicalDevice,
+                PhysicalDeviceType = physicalDeviceType,
+                Rate = 0
+            };
+        }
+
+        #endregion
+
+        #region .instance
 
         /// <summary>
         /// Определяет рейтинг устройства на основе поддерживаемой функциональности
@@ -260,8 +367,8 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
             VulkanPhysicalDeviceSearchInfo searchInfo)
         {
             var rates = new List<VulkanPhysicalDeviceRate>();
-
-            foreach (var physicalDevice in PhysicalDevices)
+            var physicalDevices = GetPhysicalDevices();
+            foreach (var physicalDevice in physicalDevices)
             {
                 var deviceRate = 0U;
                 var supportGraphics = false;
@@ -273,6 +380,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                 var properties = physicalDevice.GetProperties();
                 var supportedApiVersion = VulkanTools.GetDotNetVersion(properties.ApiVersion);
                 var features = physicalDevice.GetFeatures();
+
                 //var deviceMemory = physicalDevice.GetMemoryProperties();
                 //UInt64 deviceMemoryHeapSize = deviceMemory.MemoryHeaps[0].Size;
                 var deviceQueues = physicalDevice.GetQueueFamilyProperties();
@@ -294,7 +402,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                         supportGraphics = true;
                         if (searchInfo.IsRequestedSupportGraphicsQueue)
                         {
-                            deviceRate += 1;
+                            deviceRate++;
                         }
                     }
                     if ((queueFamilyProperties.QueueFlags & QueueFlags.Compute) == QueueFlags.Compute)
@@ -302,7 +410,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                         supportCompute = true;
                         if (searchInfo.IsRequestedSupportComputeQueue)
                         {
-                            deviceRate += 1;
+                            deviceRate++;
                         }
                     }
                     if ((queueFamilyProperties.QueueFlags & QueueFlags.Transfer) == QueueFlags.Transfer)
@@ -310,7 +418,7 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                         supportTransfer = true;
                         if (searchInfo.IsRequestedSupportTransferQueue)
                         {
-                            deviceRate += 1;
+                            deviceRate++;
                         }
                     }
                     if (searchInfo.IsRequestedSupportPresentationQueue)
@@ -318,12 +426,12 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                         if (physicalDevice.GetSurfaceSupportKHR((UInt32) i, searchInfo.VulkanSurface.Surface))
                         {
                             supportPresentation = true;
-                            deviceRate += 1;
+                            deviceRate++;
                         }
                     }
                     if (searchInfo.RequestedExtensionNames != null && searchInfo.RequestedExtensionNames.Any())
                     {
-                        var extensions = physicalDevice.EnumerateDeviceExtensionProperties(null);
+                        var extensions = physicalDevice.EnumerateDeviceExtensionProperties();
                         if (extensions != null && extensions.Length > 0)
                         {
                             var allExtensionsSupported = true;
@@ -348,13 +456,13 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                         }
                         else
                         {
-                            deviceRate += 1;
+                            deviceRate++;
                         }
                     }
                     else
                     {
                         supportRequestedExtensions = true;
-                        deviceRate += 1;
+                        deviceRate++;
                     }
 
                     if ((searchInfo.IsRequestedSupportGraphicsQueue && !supportGraphics) ||
@@ -380,18 +488,19 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
                     }
                     else
                     {
-                        deviceRate += 1;
+                        deviceRate++;
                     }
                 }
 
                 // TODO: В процессе разработки пополнять необходимым, тем самым уточняя рейтинг устройств
 
-                // Для нас обязательно должны поддержиться и геометричейский шейдер и шейдер тесселяции
-                //if (!features.GeometryShader || !features.TessellationShader)
-                //{
-                //    rates.Add(GetZeroVulkanPhysicalDeviceRate(physicalDevice, properties.DeviceType));
-                //    continue;
-                //}
+                deviceRate = GetFeaturesRate(deviceRate, features, searchInfo.RequestedFeatures);
+
+                if (deviceRate == 0)
+                {
+                    rates.Add(GetZeroPhysicalDeviceRate(physicalDevice, properties.DeviceType));
+                    continue;
+                }
 
                 // Максимально возможный размер текстур влияет на качество графики
                 //deviceRate += properties.Limits.MaxImageDimension2D;
@@ -407,15 +516,24 @@ namespace Graphics.Engine.VulkanDriver.VkInstance
             return rates.OrderByDescending(e => e.Rate).ToList();
         }
 
-        private static VulkanPhysicalDeviceRate GetZeroPhysicalDeviceRate(PhysicalDevice physicalDevice,
-            PhysicalDeviceType physicalDeviceType)
+        #endregion
+
+        #endregion
+
+        #region .fields
+
+        private Boolean _isInit;
+
+        #endregion
+
+        #region .ctors
+
+        public VulkanInstance()
         {
-            return new VulkanPhysicalDeviceRate
-            {
-                PhysicalDevice = physicalDevice,
-                PhysicalDeviceType = physicalDeviceType,
-                Rate = 0
-            };
+            EnabledInstanceExtensions = new List<ExtensionProperties>();
+            EnabledInstanceLayers = new List<LayerProperties>();
         }
+
+        #endregion
     }
 }

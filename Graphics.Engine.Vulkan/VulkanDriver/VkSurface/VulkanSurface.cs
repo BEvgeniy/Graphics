@@ -47,6 +47,7 @@ namespace Graphics.Engine.VulkanDriver.VkSurface
                 {
                     return;
                 }
+
                 VulkanInstance = vulkanSurfaceCreateInfo.VulkanInstance;
                 VulkanWindow = vulkanSurfaceCreateInfo.VulkanWindow;
                 
